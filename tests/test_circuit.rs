@@ -11,6 +11,6 @@ fn test_ghz() {
     for i in 0..num_qubits {
         qc.measure(i, i);
     }
-    assert_eq!(qc.num_qubits, num_qubits);
-    assert_eq!(qc.num_clbits, num_qubits);
+    assert_eq!(qc.num_qubits(), num_qubits);
+    assert_eq!(qc.num_clbits(), num_qubits);
 }
