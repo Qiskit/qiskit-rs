@@ -6,4 +6,5 @@
 mod qiskit_ffi;
 pub mod qiskit;
 
-pub use crate::qiskit::QuantumCircuit;
+pub use qiskit::{QuantumCircuit,QuantumRegister,ClassicalRegister};
+
