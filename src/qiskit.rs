@@ -82,9 +82,6 @@ impl QuantumCircuit {
     pub fn iswap(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_ffi::QkGate_QkGate_ISwap, &[qubit1, qubit2], &[])
     }
-    pub fn ms(&mut self, qubits: &[u32]) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_RXX, qubits, &[])
-    }
     pub fn p(&mut self, theta: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_ffi::QkGate_QkGate_Phase, &[qubit], &[theta])
     }
