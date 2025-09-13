@@ -276,7 +276,7 @@ pub struct CircuitInstruction<'a> {
 impl <'a> Drop for CircuitInstruction<'a> {
     fn drop(&mut self) {
         unsafe {
-            qiskit_ffi::qk_circuit_instruction_clear(&self.inst);
+            qiskit_ffi::qk_circuit_instruction_clear(&mut self.inst);
         }
     }
 }
@@ -303,7 +303,7 @@ impl<'a> Iterator for CircuitInstructions<'a> {
         }
         let out = unsafe {
             let mut inst = qiskit_ffi::QkCircuitInstruction {
-                name: std::ptr::null(),
+                name: std::ptr::null_mut(),
                 qubits: std::ptr::null_mut(),
                 clbits: std::ptr::null_mut(),
                 params: std::ptr::null_mut(),
