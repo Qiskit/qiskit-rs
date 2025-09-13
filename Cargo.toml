@@ -11,3 +11,6 @@ doctest = false
 
 [build-dependencies]
 bindgen = "0.72.0"
+git2 = "0.20.2"
+
+[dependencies]
