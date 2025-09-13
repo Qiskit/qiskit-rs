@@ -17,7 +17,7 @@ fn check_installation_method() -> InstallMethod {
         }
     };
 
-    let qiskit_rs_binary_install: Option<String> = match env::var("QISKIT_RS_BIN_INSTALL") {
+    let qiskit_rs_binary_install: Option<String> = match env::var("QISKIT_CEXT_DIST") {
         Ok(val) => Some(val),
         Err(e) => match e {
             env::VarError::NotPresent => None,
@@ -71,6 +71,24 @@ fn build_qiskit_from_source() {
     println!("cargo:rustc-link-lib=qiskit");
 }
 
+fn build_qiskit_from_dist(dist_path_str: String) {
+    let dist_path = Path::new(&dist_path_str);
+
+    match dist_path.try_exists() {
+        Ok(b) => {
+            match b {
+                true => {},
+                false => panic!("Qiskit dist path does not exist")
+            }
+        },
+        Err(e) => panic!("{e:?}")
+    }
+
+    println!("cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib", dist_path_str);
+    println!("cargo:rustc-link-search={}/dist/c/lib", dist_path_str);
+    println!("cargo:rustc-link-lib=qiskit");
+}
+
 
 fn main() { 
     println!("cargo:rerun-if-changed=build.rs");
@@ -81,8 +99,9 @@ fn main() {
         InstallMethod::SOURCE(_) => {
             build_qiskit_from_source();
         },
-        InstallMethod::BIN(_) => {
-            panic!("Binary build not implemented")
+        InstallMethod::BIN(dist_path) => {
+            // panic!("Binary build not implemented")
+            build_qiskit_from_dist(dist_path);
         }
     }; 
 
