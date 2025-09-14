@@ -4,109 +4,77 @@ use std::process::Command;
 use std::env;
 
 enum InstallMethod {
-    SOURCE(String),
-    BIN(String)
+    CLONE,
+    PATH(String)
 }
 
+// There are two installation methods:
+// - Default (no path specified): Automatically clones and builds the qiskit c api from source
+// - Path (Manually specified path): Uses qiskit c api binary or source from a path
+//     Use envvar QISKIT_CEXT_PATH to specify the path to the qiskit binary
+// By default, qiskit-rs uses Source (Automatic)
 fn check_installation_method() -> InstallMethod {
-    let qiskit_rs_source_install: Option<String> = match env::var("QISKIT_RS_SOURCE_INSTALL") {
-        Ok(val) => Some(val),
+    match env::var("QISKIT_CEXT_PATH") {
+        Ok(val) => InstallMethod::PATH(val),
         Err(e) => match e {
-            env::VarError::NotPresent => None,
-            env::VarError::NotUnicode(env) => panic!("Envvar QISKIT_RS_SOURCE_INSTALL is not unicode: {env:?}")
+            env::VarError::NotPresent => InstallMethod::CLONE,
+            env::VarError::NotUnicode(env) => panic!("Envvar QISKIT_CEXT_PATH is not unicode: {env:?}")
         }
-    };
-
-    let qiskit_rs_binary_install: Option<String> = match env::var("QISKIT_CEXT_DIST") {
-        Ok(val) => Some(val),
-        Err(e) => match e {
-            env::VarError::NotPresent => None,
-            env::VarError::NotUnicode(env) => panic!("Envvar QISKIT_RS_BIN_INSTALL is not unicode: {env:?}")
-        }
-    };
-
-    assert!(!(qiskit_rs_source_install.is_some() && qiskit_rs_binary_install.is_some()), "Only one installation method should be specified");
-
-    if qiskit_rs_source_install.is_some() {
-        return InstallMethod::SOURCE(qiskit_rs_source_install.unwrap());
     }
-    InstallMethod::BIN(qiskit_rs_binary_install.unwrap())
 }
 
 
-fn build_qiskit_from_source() {
-    let curr_dir_str = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let curr_dir: &Path = Path::new(&curr_dir_str);
-
-    let qiskit_c_lib = curr_dir.join("qiskit_c_lib");
-    let qiskit_source_dir: &Path = qiskit_c_lib.as_path();
-
-    let repo_dir_str: &str = qiskit_source_dir
-        .to_str()
-        .expect("Qiskit source directory could not be found");
-
-    println!("Cloning qiskit from source into {}", repo_dir_str);
-
+fn clone_qiskit(source_path: &Path) {
     let url = "https://github.com/Qiskit/qiskit.git";
-    let _ = match git2::Repository::clone(url, &qiskit_source_dir) {
+    let _ = match git2::Repository::clone(url, source_path) {
         Ok(_) => println!("Repository successfully cloned"),
         Err(e) => match e.code() {
             git2::ErrorCode::Exists => {println!("Repository already exists")}
             _ => panic!("Git clone failed: {e:?}")
         }
     };
+}
 
-    println!("Generating dynamically linked qiskit libraries");
 
+fn build_qiskit(source_path: &Path) {  
     let _ = Command::new("make")
-        .current_dir(qiskit_source_dir)
+        .current_dir(source_path)
         .arg("c")
         .status()
         .expect("Dynamically linked library generation failed");
-
-    println!("Dynamically linked libraries generated at {}", repo_dir_str);
-
-    println!("cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib", repo_dir_str);
-    println!("cargo:rustc-link-search={}/dist/c/lib", repo_dir_str);
-    println!("cargo:rustc-link-lib=qiskit");
 }
 
-fn build_qiskit_from_dist(dist_path_str: String) {
-    let dist_path = Path::new(&dist_path_str);
 
-    match dist_path.try_exists() {
+fn build_qiskit_from_source() {
+    let out_dir = std::env::var("OUT_DIR").unwrap();
+    let source_path = Path::new(&out_dir).join("qiskit_c_lib");
+    let source_path = source_path.as_path();
+   
+    clone_qiskit(&source_path);
+
+    match source_path.try_exists() {
         Ok(b) => {
             match b {
                 true => {},
-                false => panic!("Qiskit dist path does not exist")
+                false => panic!("Qiskit source path does not exist")
             }
         },
         Err(e) => panic!("{e:?}")
     }
+   
+    let repo_dir_str: &str = source_path
+        .to_str()
+        .unwrap();
 
-    println!("cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib", dist_path_str);
-    println!("cargo:rustc-link-search={}/dist/c/lib", dist_path_str);
+    build_qiskit(&source_path);
+
+    println!("cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib", repo_dir_str);
+    println!("cargo:rustc-link-search={}/dist/c/lib", repo_dir_str);
     println!("cargo:rustc-link-lib=qiskit");
-}
-
-
-fn main() { 
-    println!("cargo:rerun-if-changed=build.rs");
-
-    let install_method = check_installation_method();
-
-    match install_method {
-        InstallMethod::SOURCE(_) => {
-            build_qiskit_from_source();
-        },
-        InstallMethod::BIN(dist_path) => {
-            // panic!("Binary build not implemented")
-            build_qiskit_from_dist(dist_path);
-        }
-    }; 
 
     let bindings = bindgen::Builder::default()
-        .header("wrapper.h")
+        .header(format!("{}/dist/c/include/qiskit.h", repo_dir_str))
+        .header(format!("{}/dist/c/include/qiskit/complex.h", repo_dir_str))
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");
@@ -114,4 +82,51 @@ fn main() {
     bindings
         .write_to_file("src/qiskit_ffi.rs")
         .expect("Couldn't write bindings!");
+}
+
+fn build_qiskit_from_path(qiskit_path_str: String) {
+    let qiskit_path = Path::new(&qiskit_path_str);
+
+    match qiskit_path.try_exists() {
+        Ok(b) => {
+            match b {
+                true => {},
+                false => panic!("Qiskit path does not exist")
+            }
+        },
+        Err(e) => panic!("{e:?}")
+    }
+
+    println!("cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib", qiskit_path_str);
+    println!("cargo:rustc-link-search={}/dist/c/lib", qiskit_path_str);
+    println!("cargo:rustc-link-lib=qiskit");
+
+    let bindings = bindgen::Builder::default()
+        .header(format!("{}/dist/c/include/qiskit.h", qiskit_path_str))
+        .header(format!("{}/dist/c/include/qiskit/complex.h", qiskit_path_str))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .generate()
+        .expect("Unable to generate bindings");
+
+    bindings
+        .write_to_file("src/qiskit_ffi.rs")
+        .expect("Couldn't write bindings!");
+}
+
+
+fn main() { 
+    println!("cargo:rerun-if-changed=build.rs");
+    
+    // println!("cargo::rerun-if-env-changed=QISKIT_CEXT_PATH");
+
+    let install_method = check_installation_method();
+
+    match install_method {
+        InstallMethod::CLONE => {
+            build_qiskit_from_source();
+        },
+        InstallMethod::PATH(path) => {
+            build_qiskit_from_path(path);
+        }
+    };  
 }
