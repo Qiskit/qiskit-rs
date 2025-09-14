@@ -1,7 +1,11 @@
 [package]
-name = "qiskit-rs"
-version = "0.1.0"
+name = "qiskit"
+version = "0.0.0"
 edition = "2024"
+description = "Qiskit bindings for Rust"
+readme = "README.md"
+license = "Apache-2.0"
+keywords = ["quantum", "qiskit"]
 
 [lib]
 name = "qiskit_rs"
