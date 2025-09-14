@@ -9,18 +9,33 @@ enum InstallMethod {
 }
 
 // There are two installation methods:
-// - Default (no path specified): Automatically clones and builds the qiskit c api from source
 // - Path (Manually specified path): Uses qiskit c api binary or source from a path
 //     Use envvar QISKIT_CEXT_PATH to specify the path to the qiskit binary
-// By default, qiskit-rs uses Source (Automatic)
+// - Clone (no path specified): Automatically clones and builds the qiskit c api from source
+//     Set envvar QISKIT_CEXT_CLONE=1 to use the clone method. WARNING, cloning and building from
+//     source is very slow.
 fn check_installation_method() -> InstallMethod {
-    match env::var("QISKIT_CEXT_PATH") {
-        Ok(val) => InstallMethod::PATH(val),
+    let install_with_path: Option<InstallMethod> = match env::var("QISKIT_CEXT_PATH") {
+        Ok(val) => Some(InstallMethod::PATH(val)),
         Err(e) => match e {
-            env::VarError::NotPresent => InstallMethod::CLONE,
+            env::VarError::NotPresent => None,
             env::VarError::NotUnicode(env) => panic!("Envvar QISKIT_CEXT_PATH is not unicode: {env:?}")
         }
+    };
+    let install_with_clone: Option<InstallMethod> = match env::var("QISKIT_CEXT_CLONE") {
+        Ok(_) => Some(InstallMethod::CLONE),
+        Err(e) => match e {
+            env::VarError::NotPresent => None,
+            env::VarError::NotUnicode(env) => panic!("Envvar QISKIT_CEXT_CLONE is not unicode: {env:?}")
+        }
+    };
+    if install_with_path.is_some() {
+        return install_with_path.unwrap();
     }
+    else if install_with_clone.is_some() {
+        return install_with_clone.unwrap();
+    }
+    panic!("Please specify an installation method using envvars QISKIT_CEXT_PATH or QISKIT_CEXT_CLONE");
 }
 
 
@@ -123,6 +138,7 @@ fn main() {
 
     match install_method {
         InstallMethod::CLONE => {
+            println!("cargo::warning=Cloning and building from source is very slow");
             build_qiskit_from_source();
         },
         InstallMethod::PATH(path) => {
