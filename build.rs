@@ -28,7 +28,7 @@ fn check_installation_method() -> InstallMethod {
         Err(e) => {
             match e {
                 env::VarError::NotPresent => {
-                    panic!("Please provide an installation method with the envvar QISKIT_CEXT_INSTALL_METHOD")
+                    panic!("Please provide an installation method with the envvar QISKIT_CEXT_INSTALL_METHOD (path, clone)")
                 },
                 env::VarError::NotUnicode(_) => {
                     panic!("Envvar QISKIT_CEXT_INSTALL_METHOD is not unicode")
