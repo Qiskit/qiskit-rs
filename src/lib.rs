@@ -2,7 +2,30 @@
 //!
 //! This library exposes the C API for Qiskit in Rust.
 //!
+//!
+//! ## Building
+//!
+//! The Qiskit C API needs to be installed to use qiskit-rs. There are two 
+//! supported installation methods that can be specified:
+//! 
+//! ##### Path (Manually specified path): Uses qiskit c api binary or source from a path
+//! ```ignore
+//! export QISKIT_CEXT_INSTALL_METHOD="path"
+//! export QISKIT_CEXT_PATH="<path/to/qiskit-cext-dir>"
+//! ```
+//!
+//! ##### Clone (no path specified): Automatically clones and builds the qiskit c api from source
+//!       
+//! WARNING, cloning and building from source is very slow.
+//! ```ignore
+//! export QISKIT_CEXT_INSTALL_METHOD="clone"
+//! ``` 
+//!
+//! 
+//!
 //! ## Creating a Circuit
+//!
+//! Create a simple bell state circuit in qiskit-rs
 //!
 //! ```
 //! use qiskit_rs::QuantumCircuit;
@@ -20,6 +43,7 @@
 //!     qc.measure(1, 1);
 //! }
 //! ```
+
 
 #![allow(non_snake_case)]
 #![allow(improper_ctypes)]
