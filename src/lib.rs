@@ -9,7 +9,7 @@
 //! supported installation methods that can be specified:
 //! 
 //! ##### Path (Manually specified path): Uses qiskit c api binary or source from a path
-//! ```ignore
+//! ```bash
 //! export QISKIT_CEXT_INSTALL_METHOD="path"
 //! export QISKIT_CEXT_PATH="<path/to/qiskit-cext-dir>"
 //! ```
@@ -17,7 +17,7 @@
 //! ##### Clone (no path specified): Automatically clones and builds the qiskit c api from source
 //!       
 //! WARNING, cloning and building from source is very slow.
-//! ```ignore
+//! ```bash
 //! export QISKIT_CEXT_INSTALL_METHOD="clone"
 //! ``` 
 //!
