@@ -45,22 +45,35 @@ fn qk_to_qiskit_error(err: qiskit_ffi::QkExitCode) -> QiskitError {
     }
 }
 
+/// The core representation of a quantum circuit.
 pub struct QuantumCircuit {
     circuit: *mut qiskit_ffi::QkCircuit,
 }
 
 impl QuantumCircuit {
+    /// Create a new quantum circuit.
+    ///
+    /// Ex: Create a quantum circuit with 10 qubits and 10 classical bits:
+    ///
+    /// ```
+    /// use qiskit_rs::QuantumCircuit;
+    ///
+    /// let qc = QuantumCircuit::new(10, 10);
+    /// ```
     pub fn new(num_qubits: u32, num_clbits: u32) -> QuantumCircuit {
         let qc: *mut qiskit_ffi::QkCircuit =
             unsafe { qiskit_ffi::qk_circuit_new(num_qubits, num_clbits) };
         QuantumCircuit { circuit: qc }
     }
+    /// Return the number of qubits in a QuantumCircuit.
     pub fn num_qubits(&mut self) -> u32 {
         unsafe { qiskit_ffi::qk_circuit_num_qubits(self.circuit) }
     }
+    /// Return the number of classical bits in a QuantumCircuit.
     pub fn num_clbits(&mut self) -> u32 {
         unsafe { qiskit_ffi::qk_circuit_num_clbits(self.circuit) }
     }
+
     fn gate(&mut self, gate: qiskit_ffi::QkGate, qubits: &[u32], params: &[f64]) -> QiskitError {
         let retval: QkExitCode;
         if params.len() == 0 {
