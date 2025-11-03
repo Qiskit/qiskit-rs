@@ -1,8 +1,4 @@
-use qiskit_rs::{
-    QuantumCircuit,
-    QuantumRegister,
-    ClassicalRegister,
-};
+use qiskit_rs::{ClassicalRegister, QuantumCircuit, QuantumRegister};
 
 #[test]
 fn test_initialize_registers() {

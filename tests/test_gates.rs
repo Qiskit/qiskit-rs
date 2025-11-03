@@ -1,4 +1,4 @@
-use qiskit_rs::{QuantumCircuit,QiskitError};
+use qiskit_rs::{QiskitError, QuantumCircuit};
 
 #[test]
 fn test_single_qubit_gates() {
@@ -13,7 +13,7 @@ fn test_single_qubit_gates() {
         QuantumCircuit::tdg,
         QuantumCircuit::x,
         QuantumCircuit::y,
-        QuantumCircuit::z
+        QuantumCircuit::z,
     ];
 
     for gate in gate_funcs {
@@ -29,7 +29,7 @@ fn test_two_qubit_gates() {
         QuantumCircuit::dcx,
         QuantumCircuit::ecr,
         QuantumCircuit::iswap,
-        QuantumCircuit::cx
+        QuantumCircuit::cx,
     ];
 
     for gate in gate_funcs {
@@ -45,7 +45,7 @@ fn test_single_param_gates() {
         QuantumCircuit::p,
         QuantumCircuit::rx,
         QuantumCircuit::ry,
-        QuantumCircuit::rz
+        QuantumCircuit::rz,
     ];
 
     for gate in gate_funcs {

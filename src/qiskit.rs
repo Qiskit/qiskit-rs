@@ -1,6 +1,4 @@
-//!
-
-use qiskit_sys::{QkExitCode, qk_circuit_gate};
+use qiskit_sys::qk_circuit_gate;
 use std::ffi::{CStr, CString};
 
 #[derive(PartialEq, Eq, Debug)]
@@ -21,32 +19,32 @@ pub enum QiskitError {
     None,
 }
 
-fn qk_to_qiskit_error(err: qiskit_ffi::QkExitCode) -> QiskitError {
+fn qk_to_qiskit_error(err: qiskit_sys::QkExitCode) -> QiskitError {
     match err {
-        qiskit_ffi::QkExitCode_QkExitCode_Success => QiskitError::Success,
-        qiskit_ffi::QkExitCode_QkExitCode_CInputError => QiskitError::CInputError,
-        qiskit_ffi::QkExitCode_QkExitCode_NullPointerError => QiskitError::NullPointerError,
-        qiskit_ffi::QkExitCode_QkExitCode_AlignmentError => QiskitError::AlignmentError,
-        qiskit_ffi::QkExitCode_QkExitCode_IndexError => QiskitError::IndexError,
-        qiskit_ffi::QkExitCode_QkExitCode_ArithmeticError => QiskitError::ArithmeticError,
-        qiskit_ffi::QkExitCode_QkExitCode_MismatchedQubits => QiskitError::MismatchedQubits,
-        qiskit_ffi::QkExitCode_QkExitCode_ExpectedUnitary => QiskitError::ExpectedUnitary,
-        qiskit_ffi::QkExitCode_QkExitCode_TargetError => QiskitError::TargetError,
-        qiskit_ffi::QkExitCode_QkExitCode_TargetInstAlreadyExists => {
+        qiskit_sys::QkExitCode_QkExitCode_Success => QiskitError::Success,
+        qiskit_sys::QkExitCode_QkExitCode_CInputError => QiskitError::CInputError,
+        qiskit_sys::QkExitCode_QkExitCode_NullPointerError => QiskitError::NullPointerError,
+        qiskit_sys::QkExitCode_QkExitCode_AlignmentError => QiskitError::AlignmentError,
+        qiskit_sys::QkExitCode_QkExitCode_IndexError => QiskitError::IndexError,
+        qiskit_sys::QkExitCode_QkExitCode_ArithmeticError => QiskitError::ArithmeticError,
+        qiskit_sys::QkExitCode_QkExitCode_MismatchedQubits => QiskitError::MismatchedQubits,
+        qiskit_sys::QkExitCode_QkExitCode_ExpectedUnitary => QiskitError::ExpectedUnitary,
+        qiskit_sys::QkExitCode_QkExitCode_TargetError => QiskitError::TargetError,
+        qiskit_sys::QkExitCode_QkExitCode_TargetInstAlreadyExists => {
             QiskitError::TargetInstAlreadyExists
         }
-        qiskit_ffi::QkExitCode_QkExitCode_TargetQargMismatch => QiskitError::TargetQargMismatch,
-        qiskit_ffi::QkExitCode_QkExitCode_TargetInvalidQargsKey => {
+        qiskit_sys::QkExitCode_QkExitCode_TargetQargMismatch => QiskitError::TargetQargMismatch,
+        qiskit_sys::QkExitCode_QkExitCode_TargetInvalidQargsKey => {
             QiskitError::TargetInvalidQargsKey
         }
-        qiskit_ffi::QkExitCode_QkExitCode_TargetInvalidInstKey => QiskitError::TargetInvalidInstKey,
+        qiskit_sys::QkExitCode_QkExitCode_TargetInvalidInstKey => QiskitError::TargetInvalidInstKey,
         _ => QiskitError::None,
     }
 }
 
 /// The core representation of a quantum circuit.
 pub struct QuantumCircuit {
-    circuit: *mut qiskit_ffi::QkCircuit,
+    circuit: *mut qiskit_sys::QkCircuit,
 }
 
 impl QuantumCircuit {
@@ -60,50 +58,47 @@ impl QuantumCircuit {
     /// let qc = QuantumCircuit::new(10, 10);
     /// ```
     pub fn new(num_qubits: u32, num_clbits: u32) -> QuantumCircuit {
-        let qc: *mut qiskit_ffi::QkCircuit =
-            unsafe { qiskit_ffi::qk_circuit_new(num_qubits, num_clbits) };
+        let qc: *mut qiskit_sys::QkCircuit =
+            unsafe { qiskit_sys::qk_circuit_new(num_qubits, num_clbits) };
         QuantumCircuit { circuit: qc }
     }
     /// Return the number of qubits in a QuantumCircuit.
     pub fn num_qubits(&mut self) -> u32 {
-        unsafe { qiskit_ffi::qk_circuit_num_qubits(self.circuit) }
+        unsafe { qiskit_sys::qk_circuit_num_qubits(self.circuit) }
     }
     /// Return the number of classical bits in a QuantumCircuit.
     pub fn num_clbits(&mut self) -> u32 {
-        unsafe { qiskit_ffi::qk_circuit_num_clbits(self.circuit) }
+        unsafe { qiskit_sys::qk_circuit_num_clbits(self.circuit) }
     }
 
-    fn gate(&mut self, gate: qiskit_ffi::QkGate, qubits: &[u32], params: &[f64]) -> QiskitError {
-        let retval: QkExitCode;
-        if params.len() == 0 {
-            retval =
-                unsafe { qk_circuit_gate(self.circuit, gate, qubits.as_ptr(), std::ptr::null()) };
+    fn gate(&mut self, gate: qiskit_sys::QkGate, qubits: &[u32], params: &[f64]) -> QiskitError {
+        let retval = if params.is_empty() {
+            unsafe { qk_circuit_gate(self.circuit, gate, qubits.as_ptr(), std::ptr::null()) }
         } else {
-            retval =
-                unsafe { qk_circuit_gate(self.circuit, gate, qubits.as_ptr(), params.as_ptr()) };
-        }
+            unsafe { qk_circuit_gate(self.circuit, gate, qubits.as_ptr(), params.as_ptr()) }
+        };
         qk_to_qiskit_error(retval)
     }
     pub fn dcx(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_DCX, &[qubit1, qubit2], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_DCX, &[qubit1, qubit2], &[])
     }
     pub fn ecr(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_ECR, &[qubit1, qubit2], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_ECR, &[qubit1, qubit2], &[])
     }
     pub fn h(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_H, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_H, &[qubit], &[])
     }
     pub fn id(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_I, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_I, &[qubit], &[])
     }
     pub fn iswap(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_ISwap, &[qubit1, qubit2], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_ISwap, &[qubit1, qubit2], &[])
     }
     pub fn p(&mut self, theta: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_Phase, &[qubit], &[theta])
+        self.gate(qiskit_sys::QkGate_QkGate_Phase, &[qubit], &[theta])
     }
     pub fn r(&mut self, theta: f64, phi: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_R, &[qubit], &[theta, phi])
+        self.gate(qiskit_sys::QkGate_QkGate_R, &[qubit], &[theta, phi])
     }
     pub fn rcccx(
         &mut self,
@@ -113,7 +108,7 @@ impl QuantumCircuit {
         target_qubit: u32,
     ) -> QiskitError {
         self.gate(
-            qiskit_ffi::QkGate_QkGate_RC3X,
+            qiskit_sys::QkGate_QkGate_RC3X,
             &[control_qubit1, control_qubit2, control_qubit3, target_qubit],
             &[],
         )
@@ -125,88 +120,88 @@ impl QuantumCircuit {
         target_qubit: u32,
     ) -> QiskitError {
         self.gate(
-            qiskit_ffi::QkGate_QkGate_RCCX,
+            qiskit_sys::QkGate_QkGate_RCCX,
             &[control_qubit1, control_qubit2, target_qubit],
             &[],
         )
     }
     pub fn rx(&mut self, theta: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_RX, &[qubit], &[theta])
+        self.gate(qiskit_sys::QkGate_QkGate_RX, &[qubit], &[theta])
     }
     pub fn rxx(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_RXX, &[qubit1, qubit2], &[theta])
+        self.gate(qiskit_sys::QkGate_QkGate_RXX, &[qubit1, qubit2], &[theta])
     }
     pub fn ry(&mut self, theta: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_RY, &[qubit], &[theta])
+        self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit], &[theta])
     }
     pub fn ryy(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_RY, &[qubit1, qubit2], &[theta])
+        self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit1, qubit2], &[theta])
     }
     pub fn rz(&mut self, phi: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_RZ, &[qubit], &[phi])
+        self.gate(qiskit_sys::QkGate_QkGate_RZ, &[qubit], &[phi])
     }
     pub fn rzx(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_RZX, &[qubit1, qubit2], &[theta])
+        self.gate(qiskit_sys::QkGate_QkGate_RZX, &[qubit1, qubit2], &[theta])
     }
     pub fn rzz(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_RZZ, &[qubit1, qubit2], &[theta])
+        self.gate(qiskit_sys::QkGate_QkGate_RZZ, &[qubit1, qubit2], &[theta])
     }
     pub fn s(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_S, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_S, &[qubit], &[])
     }
     pub fn sdg(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_Sdg, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_Sdg, &[qubit], &[])
     }
     pub fn sx(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_SX, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_SX, &[qubit], &[])
     }
     pub fn sxdg(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_SXdg, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_SXdg, &[qubit], &[])
     }
     pub fn t(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_T, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_T, &[qubit], &[])
     }
     pub fn tdg(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_Tdg, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_Tdg, &[qubit], &[])
     }
     pub fn u(&mut self, theta: f64, phi: f64, lam: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_U, &[qubit], &[theta, phi, lam])
+        self.gate(qiskit_sys::QkGate_QkGate_U, &[qubit], &[theta, phi, lam])
     }
     pub fn x(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_X, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_X, &[qubit], &[])
     }
     pub fn y(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_Y, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_Y, &[qubit], &[])
     }
     pub fn z(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_ffi::QkGate_QkGate_Z, &[qubit], &[])
+        self.gate(qiskit_sys::QkGate_QkGate_Z, &[qubit], &[])
     }
     pub fn cx(&mut self, control_qubit: u32, target_qubit: u32) -> QiskitError {
         self.gate(
-            qiskit_ffi::QkGate_QkGate_CX,
+            qiskit_sys::QkGate_QkGate_CX,
             &[control_qubit, target_qubit],
             &[],
         )
     }
     pub fn measure(&mut self, qubit: u32, clbit: u32) -> QiskitError {
-        let retval = unsafe { qiskit_ffi::qk_circuit_measure(self.circuit, qubit, clbit) };
+        let retval = unsafe { qiskit_sys::qk_circuit_measure(self.circuit, qubit, clbit) };
         qk_to_qiskit_error(retval)
     }
     pub fn add_quantum_register(&mut self, register: QuantumRegister) {
-        unsafe { qiskit_ffi::qk_circuit_add_quantum_register(self.circuit, register.register) };
+        unsafe { qiskit_sys::qk_circuit_add_quantum_register(self.circuit, register.register) };
     }
     pub fn add_classical_register(&mut self, register: ClassicalRegister) {
-        unsafe { qiskit_ffi::qk_circuit_add_classical_register(self.circuit, register.register) };
+        unsafe { qiskit_sys::qk_circuit_add_classical_register(self.circuit, register.register) };
     }
     pub fn copy(&mut self) -> QuantumCircuit {
         QuantumCircuit {
-            circuit: unsafe { qiskit_ffi::qk_circuit_copy(self.circuit) },
+            circuit: unsafe { qiskit_sys::qk_circuit_copy(self.circuit) },
         }
     }
 
     /// Return the number of instructions in the circuit
     pub fn num_instructions(&self) -> usize {
-        unsafe { qiskit_ffi::qk_circuit_num_instructions(self.circuit) }
+        unsafe { qiskit_sys::qk_circuit_num_instructions(self.circuit) }
     }
 
     /// Return an iterator of all the instructions in the circuit
@@ -222,12 +217,12 @@ impl QuantumCircuit {
 
 impl Drop for QuantumCircuit {
     fn drop(&mut self) {
-        unsafe { qiskit_ffi::qk_circuit_free(self.circuit) };
+        unsafe { qiskit_sys::qk_circuit_free(self.circuit) };
     }
 }
 
 pub struct QuantumRegister {
-    register: *mut qiskit_ffi::QkQuantumRegister,
+    register: *mut qiskit_sys::QkQuantumRegister,
 }
 
 impl QuantumRegister {
@@ -235,21 +230,19 @@ impl QuantumRegister {
         let cname = CString::new(name).expect("String to CString conversion failed");
         let cname = cname.as_ptr();
         QuantumRegister {
-            register: unsafe {
-                qiskit_ffi::qk_quantum_register_new(num_qubits, cname as *const i8)
-            },
+            register: unsafe { qiskit_sys::qk_quantum_register_new(num_qubits, cname) },
         }
     }
 }
 
 impl Drop for QuantumRegister {
     fn drop(&mut self) {
-        unsafe { qiskit_ffi::qk_quantum_register_free(self.register) };
+        unsafe { qiskit_sys::qk_quantum_register_free(self.register) };
     }
 }
 
 pub struct ClassicalRegister {
-    register: *mut qiskit_ffi::QkClassicalRegister,
+    register: *mut qiskit_sys::QkClassicalRegister,
 }
 
 impl ClassicalRegister {
@@ -257,16 +250,14 @@ impl ClassicalRegister {
         let cname = CString::new(name).expect("String to CString conversion failed");
         let cname = cname.as_ptr();
         ClassicalRegister {
-            register: unsafe {
-                qiskit_ffi::qk_classical_register_new(num_clbits, cname as *const i8)
-            },
+            register: unsafe { qiskit_sys::qk_classical_register_new(num_clbits, cname) },
         }
     }
 }
 
 impl Drop for ClassicalRegister {
     fn drop(&mut self) {
-        unsafe { qiskit_ffi::qk_classical_register_free(self.register) };
+        unsafe { qiskit_sys::qk_classical_register_free(self.register) };
     }
 }
 
@@ -284,17 +275,16 @@ pub struct CircuitInstruction<'a> {
     pub clbits: &'a [u32],
     /// The parameters for the instruction
     pub params: &'a [f64],
-    inst: qiskit_ffi::QkCircuitInstruction,
+    inst: qiskit_sys::QkCircuitInstruction,
 }
 
-impl <'a> Drop for CircuitInstruction<'a> {
+impl<'a> Drop for CircuitInstruction<'a> {
     fn drop(&mut self) {
         unsafe {
-            qiskit_ffi::qk_circuit_instruction_clear(&mut self.inst);
+            qiskit_sys::qk_circuit_instruction_clear(&mut self.inst);
         }
     }
 }
-
 
 pub struct CircuitInstructions<'a> {
     len: usize,
@@ -316,7 +306,7 @@ impl<'a> Iterator for CircuitInstructions<'a> {
             return None;
         }
         let out = unsafe {
-            let mut inst = qiskit_ffi::QkCircuitInstruction {
+            let mut inst = qiskit_sys::QkCircuitInstruction {
                 name: std::ptr::null_mut(),
                 qubits: std::ptr::null_mut(),
                 clbits: std::ptr::null_mut(),
@@ -326,17 +316,10 @@ impl<'a> Iterator for CircuitInstructions<'a> {
                 num_params: u32::MAX,
             };
 
-            qiskit_ffi::qk_circuit_get_instruction(
-                self.circuit.circuit,
-                self.index,
-                &mut inst,
-            );
-            let qubits =
-                std::slice::from_raw_parts(inst.qubits, inst.num_qubits as usize);
-            let clbits =
-                std::slice::from_raw_parts(inst.clbits, inst.num_clbits as usize);
-            let params =
-                std::slice::from_raw_parts(inst.params, inst.num_params as usize);
+            qiskit_sys::qk_circuit_get_instruction(self.circuit.circuit, self.index, &mut inst);
+            let qubits = std::slice::from_raw_parts(inst.qubits, inst.num_qubits as usize);
+            let clbits = std::slice::from_raw_parts(inst.clbits, inst.num_clbits as usize);
+            let params = std::slice::from_raw_parts(inst.params, inst.num_params as usize);
             let name = CStr::from_ptr(inst.name).to_str().unwrap();
             Some(CircuitInstruction {
                 name,
@@ -374,18 +357,13 @@ mod tests {
                 assert_eq!(&[0,], inst.qubits);
                 assert_eq!(inst.clbits, &[]);
                 assert_eq!(&[FRAC_PI_2,], inst.params);
-
             } else if idx == 1 {
                 assert_eq!(inst.name, "sx");
                 assert_eq!(&[0,], inst.qubits);
                 assert_eq!(inst.clbits, &[]);
                 assert_eq!(inst.params, &[]);
             } else {
-                let expected_name = if (idx - 3) % 2 == 0 {
-                    "cx"
-                } else {
-                    "measure"
-                };
+                let expected_name = if (idx - 3) % 2 == 0 { "cx" } else { "measure" };
                 assert_eq!(expected_name, inst.name);
                 assert_eq!(inst.params, &[]);
                 if expected_name == "measure" {
@@ -397,6 +375,6 @@ mod tests {
                     assert_eq!(inst.clbits, &[]);
                 }
             }
-        };
+        }
     }
 }

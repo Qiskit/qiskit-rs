@@ -1,0 +1,15 @@
+[package]
+name = "qiskit-sys"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Raw bindings to libqiskit"
+version = "2.2.3"
+
+[dependencies]
+
+[build-dependencies]
+bindgen = "0.72.0"
+git2 = "0.20"
+
