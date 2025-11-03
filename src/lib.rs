@@ -57,8 +57,6 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
-// #[cfg(not(doctest))]
-mod qiskit_ffi;
 pub mod qiskit;
 
 pub use qiskit::{

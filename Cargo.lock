@@ -411,6 +411,13 @@ dependencies = [
 name = "qiskit"
 version = "0.0.0"
 dependencies = [
+ "qiskit-sys",
+]
+
+[[package]]
+name = "qiskit-sys"
+version = "2.2.3"
+dependencies = [
  "bindgen",
  "git2",
 ]

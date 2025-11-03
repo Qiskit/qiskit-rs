@@ -1,11 +1,22 @@
 [package]
 name = "qiskit"
 version = "0.0.0"
-edition = "2024"
-description = "Qiskit bindings for Rust"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Rust bindings to libqiskit"
 readme = "README.md"
-license = "Apache-2.0"
 keywords = ["quantum", "qiskit"]
+
+[workspace]
+members = ["qiskit-sys"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+authors = ["Matthew Treinish <mtreinish@kortar.org", "Emil Kovacev <emilkovacev@gmail.com>"]
+license = "Apache-2.0"
 
 [lib]
 name = "qiskit_rs"
@@ -13,8 +24,5 @@ path = "src/lib.rs"
 test = true
 # doctest = false
 
-[build-dependencies]
-bindgen = "0.72.0"
-git2 = "0.20.2"
-
 [dependencies]
+qiskit-sys = { path = "qiskit-sys", version="2.2.3" }

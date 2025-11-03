@@ -1,7 +1,6 @@
 //!
 
-use crate::qiskit_ffi;
-use crate::qiskit_ffi::{QkExitCode, qk_circuit_gate};
+use qiskit_sys::{QkExitCode, qk_circuit_gate};
 use std::ffi::{CStr, CString};
 
 #[derive(PartialEq, Eq, Debug)]
