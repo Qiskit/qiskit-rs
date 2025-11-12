@@ -10,10 +10,9 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-//! # Qiskit bindings for Rust
+//! # qiskit-rs
 //!
-//! This library exposes the C API for Qiskit in Rust.
-//!
+//! This library exposes the [C API for Qiskit](https://docs.quantum.ibm.com/api/qiskit-c) in Rust.
 //!
 //! ## Installation
 //!
@@ -21,7 +20,7 @@
 //! cargo add --git https://github.com/Qiskit/qiskit-rs qiskit
 //! ```
 //!
-//! ## Creating a Circuit
+//! ## Example
 //!
 //! Create a simple bell state circuit in qiskit-rs
 //!
@@ -64,6 +63,9 @@
 //! export QISKIT_CEXT_PATH="<path/to/qiskit-cext-dir>"
 //! ```
 //!
+//! ## License
+//! 
+//! [Apache License 2.0](https://github.com/Qiskit/qiskit/blob/main/LICENSE.txt)
 
 #![warn(missing_docs)]
 pub mod qiskit;
