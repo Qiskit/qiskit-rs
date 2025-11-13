@@ -1,3 +1,6 @@
+> [!WARNING]
+> This code is experimental and its API may change without prior warning. Use it at your own risk.
+
 # qiskit-rs
 
 This library exposes the [C API for Qiskit](https://docs.quantum.ibm.com/api/qiskit-c) in Rust.
