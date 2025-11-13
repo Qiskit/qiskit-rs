@@ -14,7 +14,7 @@ use qiskit_sys::qk_circuit_gate;
 use std::ffi::{CStr, CString};
 
 #[derive(PartialEq, Eq, Debug)]
-/// Base class for errors raised by Qiskit.
+/// The error enum that enumerates the different error types possible from Qiskit.
 pub enum QiskitError {
     /// Success.
     Success,
@@ -147,7 +147,7 @@ impl QuantumCircuit {
     pub fn ecr(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_ECR, &[qubit1, qubit2], &[])
     }
-    /// Apply a single-qubit Hadamard gate.
+    /// Apply a Hadamard gate.
     pub fn h(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_H, &[qubit], &[])
     }
@@ -167,7 +167,7 @@ impl QuantumCircuit {
     pub fn r(&mut self, theta: f64, phi: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_R, &[qubit], &[theta, phi])
     }
-    /// Apply a 3-controlled Toffoli gate.
+    /// Apply a simplified 3-controlled Toffoli gate.
     pub fn rcccx(
         &mut self,
         control_qubit1: u32,
