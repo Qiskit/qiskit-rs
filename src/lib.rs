@@ -68,6 +68,7 @@
 //! [Apache License 2.0](https://github.com/Qiskit/qiskit/blob/main/LICENSE.txt)
 
 #![warn(missing_docs)]
+/// The main qiskit-rs module
 pub mod qiskit;
 
 pub use qiskit::{ClassicalRegister, QiskitError, QuantumCircuit, QuantumRegister};

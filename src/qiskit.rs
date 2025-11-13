@@ -14,20 +14,48 @@ use qiskit_sys::qk_circuit_gate;
 use std::ffi::{CStr, CString};
 
 #[derive(PartialEq, Eq, Debug)]
+/// Base class for errors raised by Qiskit.
 pub enum QiskitError {
+    /// Success.
     Success,
+
+    /// Error related to data input.
     CInputError,
+
+    /// Unexpected null pointer.
     NullPointerError,
+
+    /// Pointer is not aligned to expected data.
     AlignmentError,
+
+    /// Index out of bounds.
     IndexError,
+
+    /// Error related to arithmetic operations or similar.
     ArithmeticError,
+
+    /// Mismatching number of qubits.
     MismatchedQubits,
+
+    /// Matrix is not unitary.
     ExpectedUnitary,
+
+    /// Target related error.
     TargetError,
+
+    /// Instruction already exists in the Target.
     TargetInstAlreadyExists,
+
+    /// Properties with incorrect qargs was added.
     TargetQargMismatch,
+
+    /// Trying to query into the target with non-existent qargs.
     TargetInvalidQargsKey,
+
+    /// Querying an operation that doesn't exist in the Target.
     TargetInvalidInstKey,
+
+    /// Error is not mapped to QiskitError.
     None,
 }
 
@@ -77,10 +105,28 @@ impl QuantumCircuit {
         QuantumCircuit { circuit: qc }
     }
     /// Return the number of qubits in a QuantumCircuit.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::QuantumCircuit;
+    ///
+    /// let mut qc = QuantumCircuit::new(10, 10);
+    /// let n = qc.num_qubits();
+    /// ```
     pub fn num_qubits(&mut self) -> u32 {
         unsafe { qiskit_sys::qk_circuit_num_qubits(self.circuit) }
     }
     /// Return the number of classical bits in a QuantumCircuit.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::QuantumCircuit;
+    ///
+    /// let mut qc = QuantumCircuit::new(10, 10);
+    /// let n = qc.num_clbits();
+    /// ```
     pub fn num_clbits(&mut self) -> u32 {
         unsafe { qiskit_sys::qk_circuit_num_clbits(self.circuit) }
     }
@@ -93,27 +139,35 @@ impl QuantumCircuit {
         };
         qk_to_qiskit_error(retval)
     }
+    /// Apply a double-CNOT gate.
     pub fn dcx(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_DCX, &[qubit1, qubit2], &[])
     }
+    /// Apply an echoed cross-resonance gate.
     pub fn ecr(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_ECR, &[qubit1, qubit2], &[])
     }
+    /// Apply a single-qubit Hadamard gate.
     pub fn h(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_H, &[qubit], &[])
     }
+    /// Apply an Identity gate.
     pub fn id(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_I, &[qubit], &[])
     }
+    /// Apply an iSWAP gate.
     pub fn iswap(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_ISwap, &[qubit1, qubit2], &[])
     }
+    /// Apply a Phase gate, a single-qubit rotation about the Z axis.
     pub fn p(&mut self, theta: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Phase, &[qubit], &[theta])
     }
+    /// Apply an RGate
     pub fn r(&mut self, theta: f64, phi: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_R, &[qubit], &[theta, phi])
     }
+    /// Apply a 3-controlled Toffoli gate.
     pub fn rcccx(
         &mut self,
         control_qubit1: u32,
@@ -127,6 +181,23 @@ impl QuantumCircuit {
             &[],
         )
     }
+    /// Apply a simplified Toffoli gate.
+    ///
+    /// # Arguments
+    ///
+    /// * `control_qubit1`: First control qubit
+    /// * `control_qubit2`: Second control qubit
+    /// * `target_qubit`: Qubit to apply the gate to
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::QuantumCircuit;
+    /// use std::f64::consts::PI;
+    ///
+    /// let mut qc = QuantumCircuit::new(1, 1);
+    /// qc.rx(PI / 2.0, 0);
+    /// ```
     pub fn rccx(
         &mut self,
         control_qubit1: u32,
@@ -139,7 +210,7 @@ impl QuantumCircuit {
             &[],
         )
     }
-    /// Apply qiskit_sys::QkGate_QkGate_RX
+    /// Apply a single-qubit rotation about the X axis.
     ///
     /// # Arguments
     ///
@@ -158,13 +229,13 @@ impl QuantumCircuit {
     pub fn rx(&mut self, theta: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RX, &[qubit], &[theta])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_RXX
+    /// Apply a 2-qubit rotation about XX.
     ///
     /// # Arguments
     ///
     /// * `theta`: Rotation angle
-    /// * `qubit1`: Qubit(s) to apply the gate to
-    /// * `qubit2`: Qubit(s) to apply the gate to
+    /// * `qubit1`: First qubit to apply the gate to
+    /// * `qubit2`: Second qubit to apply the gate to
     ///
     /// # Example
     ///
@@ -172,73 +243,73 @@ impl QuantumCircuit {
     /// use qiskit_rs::QuantumCircuit;
     /// use std::f64::consts::PI;
     ///
-    /// let mut qc = QuantumCircuit::new(1, 1);
-    /// qc.rx(PI / 2.0, 0, 0);
+    /// let mut qc = QuantumCircuit::new(2, 2);
+    /// qc.rxx(PI / 2.0, 0, 1);
     /// ```
     pub fn rxx(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RXX, &[qubit1, qubit2], &[theta])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_RY
+    /// Apply a single-qubit rotation about the Y axis.
     pub fn ry(&mut self, theta: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit], &[theta])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_RY
+    /// Apply a 2-qubit rotation about YY.
     pub fn ryy(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit1, qubit2], &[theta])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_RZ
+    /// Apply a single-qubit rotation about the Z axis.
     pub fn rz(&mut self, phi: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RZ, &[qubit], &[phi])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_RZX
+    /// Apply a 2-qubit rotation about ZX.
     pub fn rzx(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RZX, &[qubit1, qubit2], &[theta])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_RZZ
+    /// Apply a 2-qubit rotation about ZX.
     pub fn rzz(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RZZ, &[qubit1, qubit2], &[theta])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_S
+    /// Apply a single qubit S gate.
     pub fn s(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_S, &[qubit], &[])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_Sdg
+    /// Apply a single qubit S-adjoint gate.
     pub fn sdg(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Sdg, &[qubit], &[])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_SX
+    /// Apply a single-qubit Sqrt(X) gate.
     pub fn sx(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_SX, &[qubit], &[])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_SXdg
+    /// Apply an inverse single-qubit Sqrt(X) gate.
     pub fn sxdg(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_SXdg, &[qubit], &[])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_T
+    /// Apply a single qubit T gate.
     pub fn t(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_T, &[qubit], &[])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_Tdg
+    /// Apply a single qubit T-adjoint gate.
     pub fn tdg(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Tdg, &[qubit], &[])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_U
+    /// Apply a generic single-qubit rotation.
     pub fn u(&mut self, theta: f64, phi: f64, lam: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_U, &[qubit], &[theta, phi, lam])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_X
+    /// Apply a single-qubit Pauli-X gate.
     pub fn x(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_X, &[qubit], &[])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_Y
+    /// Apply a single-qubit Pauli-Y gate.
     pub fn y(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Y, &[qubit], &[])
     }
-    /// Apply qiskit_sys::QkGate_QkGate_Z
+    /// Apply a single-qubit Pauli-Z gate.
     pub fn z(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Z, &[qubit], &[])
     }
-    /// Apply QkGate_CX
+    /// Apply a controlled-X gate.
     pub fn cx(&mut self, control_qubit: u32, target_qubit: u32) -> QiskitError {
         self.gate(
             qiskit_sys::QkGate_QkGate_CX,
@@ -246,32 +317,32 @@ impl QuantumCircuit {
             &[],
         )
     }
-    /// Measure a qubit in the Z basis into a classical bit
+    /// Measure a qubit in the Z basis into a classical bit.
     pub fn measure(&mut self, qubit: u32, clbit: u32) -> QiskitError {
         let retval = unsafe { qiskit_sys::qk_circuit_measure(self.circuit, qubit, clbit) };
         qk_to_qiskit_error(retval)
     }
-    /// Add a quantum register to the circuit
+    /// Add a quantum register to the circuit.
     pub fn add_quantum_register(&mut self, register: QuantumRegister) {
         unsafe { qiskit_sys::qk_circuit_add_quantum_register(self.circuit, register.register) };
     }
-    /// Add a classical register to the circuit
+    /// Add a classical register to the circuit.
     pub fn add_classical_register(&mut self, register: ClassicalRegister) {
         unsafe { qiskit_sys::qk_circuit_add_classical_register(self.circuit, register.register) };
     }
-    /// Create a deepcopy of the circuit
+    /// Create a deepcopy of the circuit.
     pub fn copy(&mut self) -> QuantumCircuit {
         QuantumCircuit {
             circuit: unsafe { qiskit_sys::qk_circuit_copy(self.circuit) },
         }
     }
 
-    /// Return the number of instructions in the circuit
+    /// Return the number of instructions in the circuit.
     pub fn num_instructions(&self) -> usize {
         unsafe { qiskit_sys::qk_circuit_num_instructions(self.circuit) }
     }
 
-    /// Return an iterator of all the instructions in the circuit
+    /// Return an iterator of all the instructions in the circuit.
     pub fn instructions(&self) -> impl ExactSizeIterator<Item = CircuitInstruction<'_>> + '_ {
         let num_inst = self.num_instructions();
         CircuitInstructions {
@@ -288,11 +359,13 @@ impl Drop for QuantumCircuit {
     }
 }
 
+/// A quantum register.
 pub struct QuantumRegister {
     register: *mut qiskit_sys::QkQuantumRegister,
 }
 
 impl QuantumRegister {
+    /// Create a new quantum register.
     pub fn new(num_qubits: u32, name: &str) -> QuantumRegister {
         let cname = CString::new(name).expect("String to CString conversion failed");
         let cname = cname.as_ptr();
@@ -308,11 +381,13 @@ impl Drop for QuantumRegister {
     }
 }
 
+/// A classical register.
 pub struct ClassicalRegister {
     register: *mut qiskit_sys::QkClassicalRegister,
 }
 
 impl ClassicalRegister {
+    /// Create a new classical register.
     pub fn new(num_clbits: u32, name: &str) -> ClassicalRegister {
         let cname = CString::new(name).expect("String to CString conversion failed");
         let cname = cname.as_ptr();
@@ -353,6 +428,7 @@ impl<'a> Drop for CircuitInstruction<'a> {
     }
 }
 
+/// A list of circuit instructions for a QuantumCircuit
 pub struct CircuitInstructions<'a> {
     len: usize,
     index: usize,
