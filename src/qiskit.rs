@@ -62,7 +62,9 @@ pub struct QuantumCircuit {
 impl QuantumCircuit {
     /// Create a new quantum circuit.
     ///
-    /// Ex: Create a quantum circuit with 10 qubits and 10 classical bits:
+    /// # Example
+    ///
+    /// Create a quantum circuit with 10 qubits and 10 classical bits:
     ///
     /// ```
     /// use qiskit_rs::QuantumCircuit;
@@ -137,57 +139,106 @@ impl QuantumCircuit {
             &[],
         )
     }
+    /// Apply qiskit_sys::QkGate_QkGate_RX
+    ///
+    /// # Arguments
+    ///
+    /// * `theta`: Rotation angle
+    /// * `qubit`: Qubit to apply the gate to
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::QuantumCircuit;
+    /// use std::f64::consts::PI;
+    ///
+    /// let mut qc = QuantumCircuit::new(1, 1);
+    /// qc.rx(PI / 2.0, 0);
+    /// ```
     pub fn rx(&mut self, theta: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RX, &[qubit], &[theta])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_RXX
+    ///
+    /// # Arguments
+    ///
+    /// * `theta`: Rotation angle
+    /// * `qubit1`: Qubit(s) to apply the gate to
+    /// * `qubit2`: Qubit(s) to apply the gate to
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::QuantumCircuit;
+    /// use std::f64::consts::PI;
+    ///
+    /// let mut qc = QuantumCircuit::new(1, 1);
+    /// qc.rx(PI / 2.0, 0, 0);
+    /// ```
     pub fn rxx(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RXX, &[qubit1, qubit2], &[theta])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_RY
     pub fn ry(&mut self, theta: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit], &[theta])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_RY
     pub fn ryy(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit1, qubit2], &[theta])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_RZ
     pub fn rz(&mut self, phi: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RZ, &[qubit], &[phi])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_RZX
     pub fn rzx(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RZX, &[qubit1, qubit2], &[theta])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_RZZ
     pub fn rzz(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_RZZ, &[qubit1, qubit2], &[theta])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_S
     pub fn s(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_S, &[qubit], &[])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_Sdg
     pub fn sdg(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Sdg, &[qubit], &[])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_SX
     pub fn sx(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_SX, &[qubit], &[])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_SXdg
     pub fn sxdg(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_SXdg, &[qubit], &[])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_T
     pub fn t(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_T, &[qubit], &[])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_Tdg
     pub fn tdg(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Tdg, &[qubit], &[])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_U
     pub fn u(&mut self, theta: f64, phi: f64, lam: f64, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_U, &[qubit], &[theta, phi, lam])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_X
     pub fn x(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_X, &[qubit], &[])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_Y
     pub fn y(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Y, &[qubit], &[])
     }
+    /// Apply qiskit_sys::QkGate_QkGate_Z
     pub fn z(&mut self, qubit: u32) -> QiskitError {
         self.gate(qiskit_sys::QkGate_QkGate_Z, &[qubit], &[])
     }
+    /// Apply QkGate_CX
     pub fn cx(&mut self, control_qubit: u32, target_qubit: u32) -> QiskitError {
         self.gate(
             qiskit_sys::QkGate_QkGate_CX,
@@ -195,16 +246,20 @@ impl QuantumCircuit {
             &[],
         )
     }
+    /// Measure a qubit in the Z basis into a classical bit
     pub fn measure(&mut self, qubit: u32, clbit: u32) -> QiskitError {
         let retval = unsafe { qiskit_sys::qk_circuit_measure(self.circuit, qubit, clbit) };
         qk_to_qiskit_error(retval)
     }
+    /// Add a quantum register to the circuit
     pub fn add_quantum_register(&mut self, register: QuantumRegister) {
         unsafe { qiskit_sys::qk_circuit_add_quantum_register(self.circuit, register.register) };
     }
+    /// Add a classical register to the circuit
     pub fn add_classical_register(&mut self, register: ClassicalRegister) {
         unsafe { qiskit_sys::qk_circuit_add_classical_register(self.circuit, register.register) };
     }
+    /// Create a deepcopy of the circuit
     pub fn copy(&mut self) -> QuantumCircuit {
         QuantumCircuit {
             circuit: unsafe { qiskit_sys::qk_circuit_copy(self.circuit) },
