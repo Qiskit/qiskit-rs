@@ -54,9 +54,6 @@ pub enum QiskitError {
 
     /// Querying an operation that doesn't exist in the Target.
     TargetInvalidInstKey,
-
-    /// Error is not mapped to QiskitError.
-    None,
 }
 
 fn qk_to_qiskit_error(err: qiskit_sys::QkExitCode) -> QiskitError {
@@ -78,7 +75,7 @@ fn qk_to_qiskit_error(err: qiskit_sys::QkExitCode) -> QiskitError {
             QiskitError::TargetInvalidQargsKey
         }
         qiskit_sys::QkExitCode_QkExitCode_TargetInvalidInstKey => QiskitError::TargetInvalidInstKey,
-        _ => QiskitError::None,
+        _ => panic!("Invalid option for QiskitError"),
     }
 }
 
