@@ -474,50 +474,6 @@ impl<'a> Iterator for CircuitInstructions<'a> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::QuantumCircuit;
-    use std::f64::consts::FRAC_PI_2;
-
-    #[test]
-    fn test_circuit_instructions() {
-        let mut qc = QuantumCircuit::new(100, 100);
-        qc.rz(FRAC_PI_2, 0);
-        qc.sx(0);
-        qc.rz(FRAC_PI_2, 0);
-        for target in 0..100u32 {
-            qc.cx(0, target);
-            qc.measure(target, target);
-        }
-        let res = qc.instructions();
-        let mut target: u32 = 0;
-        for (idx, inst) in res.enumerate() {
-            if idx == 0 || idx == 2 {
-                assert_eq!(inst.name, "rz");
-                assert_eq!(&[0,], inst.qubits);
-                assert_eq!(inst.clbits, &[]);
-                assert_eq!(&[FRAC_PI_2,], inst.params);
-            } else if idx == 1 {
-                assert_eq!(inst.name, "sx");
-                assert_eq!(&[0,], inst.qubits);
-                assert_eq!(inst.clbits, &[]);
-                assert_eq!(inst.params, &[]);
-            } else {
-                let expected_name = if (idx - 3) % 2 == 0 { "cx" } else { "measure" };
-                assert_eq!(expected_name, inst.name);
-                assert_eq!(inst.params, &[]);
-                if expected_name == "measure" {
-                    assert_eq!(inst.qubits, &[target]);
-                    assert_eq!(inst.clbits, &[target]);
-                    target += 1;
-                } else {
-                    assert_eq!(inst.qubits, &[0, target]);
-                    assert_eq!(inst.clbits, &[]);
-                }
-            }
-        }
-    }
-}
 
 fn bitterm_to_qkbitterm(bitterm: char) -> qiskit_sys::QkBitTerm {
     match bitterm {
@@ -540,7 +496,7 @@ pub struct Observable {
 }
 
 /// A complex, double-precision number representation.
-type Complex64 = qiskit_sys::QkComplex64;
+pub type Complex64 = qiskit_sys::QkComplex64;
 
 impl Observable {
     /// Create a new observable
@@ -548,15 +504,15 @@ impl Observable {
     /// # Example
     ///
     /// ```
-    /// use qiskit::Observable
+    /// use qiskit_rs::{Observable, Complex64};
     //
     /// let num_qubits = 100;
-    /// let mut coeffs = [Complex64{1, -1}];
+    /// let coeffs = [Complex64{re: 1.0, im: -1.0}, Complex64{re: 1.0, im: -1.0}];
     /// let bits = ['0', '1', '+', '-'];
     /// let indices = [0, 1, 98, 99];
     /// let boundaries = [0, 2, 4];
     ///
-    /// let obs = Observable::new(num_qubits, coeffs, bits, indices, boundaries);
+    /// let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
     /// ```
     pub fn new(num_qubits: u32, coeffs: &[Complex64], bit_terms: &[char], indices: &[u32], boundaries: &[usize]) -> Observable {
         // Input shape checks (see https://quantum.cloud.ibm.com/docs/en/api/qiskit-c/qk-obs#representation)
@@ -647,5 +603,67 @@ impl Observable {
 impl Drop for Observable {
     fn drop(&mut self) {
         unsafe { qiskit_sys::qk_obs_free(self.observable) };
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::{QuantumCircuit, Observable, Complex64};
+    use std::f64::consts::FRAC_PI_2;
+
+    #[test]
+    fn test_circuit_instructions() {
+        let mut qc = QuantumCircuit::new(100, 100);
+        qc.rz(FRAC_PI_2, 0);
+        qc.sx(0);
+        qc.rz(FRAC_PI_2, 0);
+        for target in 0..100u32 {
+            qc.cx(0, target);
+            qc.measure(target, target);
+        }
+        let res = qc.instructions();
+        let mut target: u32 = 0;
+        for (idx, inst) in res.enumerate() {
+            if idx == 0 || idx == 2 {
+                assert_eq!(inst.name, "rz");
+                assert_eq!(&[0,], inst.qubits);
+                assert_eq!(inst.clbits, &[]);
+                assert_eq!(&[FRAC_PI_2,], inst.params);
+            } else if idx == 1 {
+                assert_eq!(inst.name, "sx");
+                assert_eq!(&[0,], inst.qubits);
+                assert_eq!(inst.clbits, &[]);
+                assert_eq!(inst.params, &[]);
+            } else {
+                let expected_name = if (idx - 3) % 2 == 0 { "cx" } else { "measure" };
+                assert_eq!(expected_name, inst.name);
+                assert_eq!(inst.params, &[]);
+                if expected_name == "measure" {
+                    assert_eq!(inst.qubits, &[target]);
+                    assert_eq!(inst.clbits, &[target]);
+                    target += 1;
+                } else {
+                    assert_eq!(inst.qubits, &[0, target]);
+                    assert_eq!(inst.clbits, &[]);
+                }
+            }
+        }
+    }
+    #[test]
+    fn test_observables() {
+        let num_qubits = 100;
+        let coeffs = [Complex64{re: 1.0, im: -1.0}, Complex64{re: 1.0, im: -1.0}];
+        let bits = ['0', '1', '+', '-'];
+        let indices = [0, 1, 98, 99];
+        let boundaries = [0, 2, 4];
+                                                                                      
+        let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
+        assert_eq!(obs.num_terms(), 2);
+
+        let obs_b = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
+        assert!(obs.equal(&obs_b));
+
+        assert_eq!(obs.str(), obs_b.str());
     }
 }
