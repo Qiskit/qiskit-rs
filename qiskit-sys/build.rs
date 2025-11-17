@@ -126,6 +126,7 @@ fn build_qiskit_from_source() {
         .header(format!("{}/dist/c/include/qiskit.h", repo_dir_str))
         .header(format!("{}/dist/c/include/qiskit/complex.h", repo_dir_str))
         .parse_callbacks(Box::new(CargoCallbacks))
+        .size_t_is_usize(true)
         .generate()
         .expect("Unable to generate bindings");
 
