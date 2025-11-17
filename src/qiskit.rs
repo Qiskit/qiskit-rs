@@ -594,9 +594,12 @@ impl Observable {
         unsafe { qiskit_sys::qk_obs_equal(self.observable, obs.observable) }
     }
     /// Return a string representation of the observable
-    pub fn str(&self) -> &str {
+    pub fn str(&self) -> String {
         let obs_str = unsafe { qiskit_sys::qk_obs_str(self.observable) };
-        unsafe { CStr::from_ptr(obs_str) }.to_str().unwrap()
+        // Clone C string into String, which implements Drop
+        let retval = String::from(unsafe { CStr::from_ptr(obs_str) }.to_str().unwrap());
+        unsafe { qiskit_sys::qk_str_free(obs_str) };
+        retval
     }
 }
 
