@@ -518,3 +518,134 @@ mod tests {
         }
     }
 }
+
+fn bitterm_to_qkbitterm(bitterm: char) -> qiskit_sys::QkBitTerm {
+    match bitterm {
+        'X' => qiskit_sys::QkBitTerm_QkBitTerm_X,
+        'Y' => qiskit_sys::QkBitTerm_QkBitTerm_Y,
+        'Z' => qiskit_sys::QkBitTerm_QkBitTerm_Z,
+        '+' => qiskit_sys::QkBitTerm_QkBitTerm_Plus,
+        '-' => qiskit_sys::QkBitTerm_QkBitTerm_Minus,
+        'r' => qiskit_sys::QkBitTerm_QkBitTerm_Right,
+        'l' => qiskit_sys::QkBitTerm_QkBitTerm_Left,
+        '0' => qiskit_sys::QkBitTerm_QkBitTerm_Zero,
+        '1' => qiskit_sys::QkBitTerm_QkBitTerm_One,
+        _ => panic!("Invalid bitterm: {}", bitterm.to_string())
+    }
+}
+
+/// An observable over Pauli bases that stores its data in a qubit-sparse format.
+pub struct Observable {
+    observable: *mut qiskit_sys::QkObs
+}
+
+/// A complex, double-precision number representation.
+type Complex64 = qiskit_sys::QkComplex64;
+
+impl Observable {
+    /// Create a new observable
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit::Observable
+    //
+    /// let num_qubits = 100;
+    /// let mut coeffs = [Complex64{1, -1}];
+    /// let bits = ['0', '1', '+', '-'];
+    /// let indices = [0, 1, 98, 99];
+    /// let boundaries = [0, 2, 4];
+    ///
+    /// let obs = Observable::new(num_qubits, coeffs, bits, indices, boundaries);
+    /// ```
+    pub fn new(num_qubits: u32, coeffs: &[Complex64], bit_terms: &[char], indices: &[u32], boundaries: &[usize]) -> Observable {
+        // Input shape checks (see https://quantum.cloud.ibm.com/docs/en/api/qiskit-c/qk-obs#representation)
+        assert!(bit_terms.len() == indices.len()); 
+        assert!(coeffs.len() + 1 == boundaries.len());
+
+        let mut coeffs = Vec::from(coeffs);
+        let mut bit_terms: Vec<u8> = bit_terms.into_iter().map(|x| bitterm_to_qkbitterm(*x)).collect();
+        let mut indices = Vec::from(indices);
+        let mut boundaries = Vec::from(boundaries);
+        Observable { 
+            observable: unsafe { qiskit_sys::qk_obs_new(
+                num_qubits,
+                coeffs.len().try_into().unwrap(),
+                bit_terms.len().try_into().unwrap(),
+                coeffs.as_mut_ptr(),
+                bit_terms.as_mut_ptr(),
+                indices.as_mut_ptr(),
+                boundaries.as_mut_ptr(),
+            )}
+        }
+    }
+    /// Construct the zero observable (without any terms).
+    pub fn zero(num_qubits: u32) -> Observable {
+        Observable { 
+            observable: unsafe { qiskit_sys::qk_obs_zero(num_qubits) } 
+        }
+    }
+    /// Construct the identity observable.
+    pub fn identity(num_qubits: u32) -> Observable {
+        Observable { 
+            observable: unsafe { qiskit_sys::qk_obs_identity(num_qubits) } 
+        }
+    }
+    /// Add two observables.
+    pub fn add(&self, obs: &Observable) -> Observable {
+        Observable {
+            observable: unsafe { qiskit_sys::qk_obs_add(self.observable, obs.observable) }
+        }
+    }
+    /// Multiply the observable by a complex coefficient.
+    pub fn multiply(&self, coeff: &Complex64) -> Observable {
+        Observable {
+            observable: unsafe { qiskit_sys::qk_obs_multiply(self.observable, coeff) }
+        }
+    }
+    /// Compose (multiply) two observables.
+    pub fn compose(&self, obs: &Observable) -> Observable {
+        Observable {
+            observable: unsafe { qiskit_sys::qk_obs_compose(self.observable, obs.observable) }
+        }
+    }
+    /// Compose (multiply) two observables according to a custom qubit order.
+    pub fn compose_map(&self, obs: &Observable, qargs: &[u32]) -> Observable {
+        Observable {
+            observable: unsafe { qiskit_sys::qk_obs_compose_map(self.observable, obs.observable, qargs.as_ptr()) }
+        }
+    }
+    /// Get the number of terms in the observable.
+    pub fn num_terms(&self) -> usize {
+        unsafe { qiskit_sys::qk_obs_num_terms(self.observable) }
+    }
+    /// Get the number of qubits the observable is defined on.
+    pub fn num_qubits(&self) -> u32 {
+        unsafe { qiskit_sys::qk_obs_num_qubits(self.observable) }
+    }
+    /// Get the number of bit terms/indices in the observable.
+    pub fn len(&self) -> usize {
+        unsafe { qiskit_sys::qk_obs_len(self.observable) }
+    }
+    /// Copy the observable
+    pub fn copy(&self) -> Observable {
+        Observable {
+            observable: unsafe { qiskit_sys::qk_obs_copy(self.observable) }
+        }
+    }
+    /// Compare two observables for equality.
+    pub fn equal(&self, obs: &Observable) -> bool {
+        unsafe { qiskit_sys::qk_obs_equal(self.observable, obs.observable) }
+    }
+    /// Return a string representation of the observable
+    pub fn str(&self) -> &str {
+        let obs_str = unsafe { qiskit_sys::qk_obs_str(self.observable) };
+        unsafe { CStr::from_ptr(obs_str) }.to_str().unwrap()
+    }
+}
+
+impl Drop for Observable {
+    fn drop(&mut self) {
+        unsafe { qiskit_sys::qk_obs_free(self.observable) };
+    }
+}
