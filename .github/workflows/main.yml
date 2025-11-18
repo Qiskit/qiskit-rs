@@ -32,5 +32,5 @@ jobs:
       with:
         name: docs
         path: |
-          target/docs/qiskit_rs
-          target/docs/qiskit_sys
+          target/doc/qiskit_rs
+          target/doc/qiskit_sys
