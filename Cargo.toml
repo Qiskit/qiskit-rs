@@ -22,7 +22,7 @@ license = "Apache-2.0"
 name = "qiskit_rs"
 path = "src/lib.rs"
 test = true
-# doctest = false
+doctest = true
 
 [dependencies]
 qiskit-sys = { path = "qiskit-sys", version="2.2.3" }
