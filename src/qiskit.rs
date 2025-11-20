@@ -1,4 +1,4 @@
-// This code is part of Qiskit Rust bindings.
+
 //
 // (C) Copyright IBM 2025
 //
@@ -498,6 +498,7 @@ pub struct Observable {
 /// A complex, double-precision number representation.
 pub type Complex64 = qiskit_sys::QkComplex64;
 
+
 impl Observable {
     /// Create a new observable
     ///
@@ -519,7 +520,7 @@ impl Observable {
         assert!(bit_terms.len() == indices.len()); 
         assert!(coeffs.len() + 1 == boundaries.len());
 
-        let mut coeffs = Vec::from(coeffs);
+        let mut coeffs: Vec<qiskit_sys::QkComplex64> = Vec::from(coeffs);
         let mut bit_terms: Vec<u8> = bit_terms.into_iter().map(|x| bitterm_to_qkbitterm(*x)).collect();
         let mut indices = Vec::from(indices);
         let mut boundaries = Vec::from(boundaries);
@@ -579,6 +580,31 @@ impl Observable {
     pub fn num_qubits(&self) -> u32 {
         unsafe { qiskit_sys::qk_obs_num_qubits(self.observable) }
     }
+    /// Get the list of coefficients of an observable
+    ///
+    /// ```
+    /// use qiskit_rs::{Observable, Complex64};
+    ///                                                                       
+    /// let num_qubits = 100;
+    /// let coeffs = [Complex64{re: 1.0, im: -1.0}, Complex64{re: 1.0, im: -1.0}];
+    /// let bits = ['0', '1', '+', '-'];
+    /// let indices = [0, 1, 98, 99];
+    /// let boundaries = [0, 2, 4];
+    ///                                                                               
+    /// let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
+    ///
+    /// for (i, coef) in obs.coeffs().enumerate() {
+    ///     assert_eq!(coef.re, coeffs[i].re);
+    ///     assert_eq!(coef.im, coeffs[i].im);
+    /// }
+    /// ```
+    pub fn coeffs(&self) -> std::slice::Iter<'_, qiskit_sys::QkComplex64> {
+        let num_coeffs = unsafe { qiskit_sys::qk_obs_num_terms(self.observable) };
+        let coeffs_ptr = unsafe { qiskit_sys::qk_obs_coeffs(self.observable) };
+        let slice = unsafe { std::slice::from_raw_parts(coeffs_ptr, num_coeffs as usize) };
+        slice.iter()
+        
+    }
     /// Get the number of bit terms/indices in the observable.
     pub fn len(&self) -> usize {
         unsafe { qiskit_sys::qk_obs_len(self.observable) }
@@ -600,6 +626,40 @@ impl Observable {
         let retval = String::from(unsafe { CStr::from_ptr(obs_str) }.to_str().unwrap());
         unsafe { qiskit_sys::qk_str_free(obs_str) };
         retval
+    }
+    /// Apply a new qubit layout to the observable.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::Observable;
+    ///
+    /// let identity = Observable::identity(2);
+    ///
+    /// // The number of qubits the observable acts on can be extended by 
+    /// // setting a larger num_qubits than the current observable has.
+    /// let identity = identity.apply_layout(&[10, 9, 8, 7]);
+    /// ```
+    pub fn apply_layout(&self, layout: &[u32]) -> Observable {
+        let new = self.copy();
+        let _ = unsafe { qiskit_sys::qk_obs_apply_layout(new.observable, layout.as_ptr(), layout.len() as u32) };
+        new
+    }
+    /// Calculate the canonical representation of the observable.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::Observable;
+    ///
+    /// let identity = Observable::identity(100);
+    /// let two = identity.add(&identity);
+    /// let canonical: Observable = identity.canonicalize(1e-6);
+    /// ```
+    pub fn canonicalize(&self, tolerance: f64) -> Observable {
+        let new = self.copy();
+        unsafe { qiskit_sys::qk_obs_canonicalize(new.observable, tolerance) };
+        new
     }
 }
 
