@@ -10,7 +10,7 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-use qiskit_rs::{ClassicalRegister, QuantumCircuit, QuantumRegister};
+use qiskit_rs::circuit::{ClassicalRegister, QuantumCircuit, QuantumRegister};
 
 #[test]
 fn test_initialize_registers() {
