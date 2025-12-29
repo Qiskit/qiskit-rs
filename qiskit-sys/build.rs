@@ -94,6 +94,7 @@ fn clone_qiskit(source_path: &Path) {
 fn build_qiskit(source_path: &Path) {
     let _ = Command::new("make")
         .current_dir(source_path)
+        .env("CARGO_BUILD_TARGET", env::var("TARGET").unwrap())
         .arg("c")
         .status()
         .expect("Dynamically linked library generation failed");
