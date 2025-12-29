@@ -97,8 +97,9 @@ fn build_qiskit(source_path: &Path) {
         .current_dir(source_path)
         .env("CARGO_BUILD_TARGET", env::var("TARGET").unwrap());
 
-    if let Ok(v) = env::var("CARGO_FEATURE_wasm_js") {
-        command.env("CARGO_FEATURE_wasm_js", v);
+    if cfg!(feature = "wasm_js") {
+        command.env("QISKIT_RS_ADDITIONAL_FEATURES", "wasm_js");
+        command.env("RUSTFLAGS", "--cfg getrandom_backend=\"wasm_js\"");
     }
 
     command
