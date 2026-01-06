@@ -26,3 +26,6 @@ doctest = true
 
 [dependencies]
 qiskit-sys = { path = "qiskit-sys", version="2.2.3" }
+
+[features]
+wasm_js = [ "qiskit-sys/wasm_js" ]

@@ -92,8 +92,17 @@ fn clone_qiskit(source_path: &Path) {
 }
 
 fn build_qiskit(source_path: &Path) {
-    let _ = Command::new("make")
+    let mut command = Command::new("make");
+    command
         .current_dir(source_path)
+        .env("CARGO_BUILD_TARGET", env::var("TARGET").unwrap());
+
+    if cfg!(feature = "wasm_js") {
+        command.env("QISKIT_RS_ADDITIONAL_FEATURES", "wasm_js");
+        command.env("RUSTFLAGS", "--cfg getrandom_backend=\"wasm_js\"");
+    }
+
+    command
         .arg("c")
         .status()
         .expect("Dynamically linked library generation failed");

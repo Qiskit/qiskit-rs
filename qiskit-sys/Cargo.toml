@@ -13,3 +13,5 @@ version = "2.2.3"
 bindgen = "0.72.0"
 git2 = "0.20"
 
+[features]
+wasm_js = []
