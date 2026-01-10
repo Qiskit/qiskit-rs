@@ -71,4 +71,6 @@
 /// The main qiskit-rs module
 pub mod qiskit;
 
-pub use qiskit::{ClassicalRegister, QiskitError, QuantumCircuit, QuantumRegister, Observable, Complex64};
+pub use qiskit::{
+    ClassicalRegister, Complex64, Observable, QiskitError, QuantumCircuit, QuantumRegister,
+};
