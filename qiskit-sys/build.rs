@@ -79,6 +79,9 @@ fn clone_qiskit(source_path: &Path) {
                     let (obj, _) = repo
                         .revparse_ext(refname)
                         .unwrap_or_else(|_| panic!("{} not found in repo", refname));
+                    // Reset the repository in case of any untracked changes
+                    repo.reset(&obj, git2::ResetType::Soft, None)
+                        .expect("Error resetting repository.");
                     repo.checkout_tree(&obj, None)
                         .unwrap_or_else(|_| panic!("failed to checkout {}", refname));
                 }
@@ -91,6 +94,11 @@ fn clone_qiskit(source_path: &Path) {
 fn build_qiskit(source_path: &Path) {
     let _ = Command::new("make")
         .current_dir(source_path)
+        .env("CARGO_BUILD_TARGET", env::var("TARGET").unwrap())
+        .arg(format!(
+            "C_CARGO_TARGET_DIR=target/{}/release",
+            env::var("TARGET").unwrap()
+        ))
         .arg("c")
         .status()
         .expect("Dynamically linked library generation failed");
