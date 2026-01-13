@@ -25,4 +25,4 @@ test = true
 doctest = true
 
 [dependencies]
-qiskit-sys = { path = "qiskit-sys", version="2.2.3" }
+qiskit-sys = { path = "qiskit-sys", version="2.3.0" }
