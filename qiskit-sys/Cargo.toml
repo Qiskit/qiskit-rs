@@ -5,7 +5,7 @@ rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 description = "Raw bindings to libqiskit"
-version = "2.2.3"
+version = "2.3.0"
 
 [dependencies]
 
