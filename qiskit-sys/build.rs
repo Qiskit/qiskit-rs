@@ -123,24 +123,7 @@ fn build_qiskit_from_source() {
 
     build_qiskit(source_path);
 
-    println!(
-        "cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib",
-        repo_dir_str
-    );
-    println!("cargo:rustc-link-search={}/dist/c/lib", repo_dir_str);
-    println!("cargo:rustc-link-lib=qiskit");
-
-    let bindings = bindgen::Builder::default()
-        .header(format!("{}/dist/c/include/qiskit.h", repo_dir_str))
-        .header(format!("{}/dist/c/include/qiskit/complex.h", repo_dir_str))
-        .parse_callbacks(Box::new(CargoCallbacks))
-        .generate()
-        .expect("Unable to generate bindings");
-
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
+    generate_bindings(repo_dir_str.to_string());
 }
 
 fn build_qiskit_from_path(qiskit_path_str: String) {
@@ -154,26 +137,55 @@ fn build_qiskit_from_path(qiskit_path_str: String) {
         Err(e) => panic!("{e:?}"),
     }
 
-    println!(
-        "cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib",
-        qiskit_path_str
-    );
-    println!(
-        "cargo:rustc-env=DYLD_LIBRARY_PATH={}/dist/c/lib",
-        qiskit_path_str
-    );
-    println!("cargo:rustc-link-search={}/dist/c/lib", qiskit_path_str);
-    println!("cargo:rustc-link-lib=qiskit");
+    generate_bindings(qiskit_path_str);
+}
 
-    let bindings = bindgen::Builder::default()
-        .header(format!("{}/dist/c/include/qiskit.h", qiskit_path_str))
-        .header(format!(
-            "{}/dist/c/include/qiskit/complex.h",
-            qiskit_path_str
-        ))
-        .parse_callbacks(Box::new(CargoCallbacks))
-        .generate()
-        .expect("Unable to generate bindings");
+fn generate_bindings(qiskit_path_str: String) {
+    let subpath = if cfg!(feature = "python_binding") {
+        "qiskit"
+    } else {
+        "dist/c/lib"
+    };
+
+    println!("cargo:rustc-link-lib=qiskit");
+    println!(
+        "cargo:rustc-env=LD_LIBRARY_PATH={}/{}",
+        qiskit_path_str, subpath
+    );
+    println!(
+        "cargo:rustc-env=DYLD_LIBRARY_PATH={}/{}",
+        qiskit_path_str, subpath
+    );
+    println!("cargo:rustc-link-search={}/{}", qiskit_path_str, subpath);
+
+    let bindings: bindgen::Bindings;
+    if cfg!(feature = "python_binding") {
+        bindings = bindgen::Builder::default()
+            .clang_arg("-DQISKIT_C_PYTHON_INTERFACE=1")
+            .raw_line("use pyo3::ffi::PyObject;")
+            .header(format!("{}/dist/c/include/qiskit.h", qiskit_path_str))
+            .header(format!(
+                "{}/dist/c/include/qiskit/complex.h",
+                qiskit_path_str
+            ))
+            .allowlist_item("^(qk_.*)$")
+            .allowlist_item("^(Qk.*)$")
+            .blocklist_item("^(Py.*)$")
+            .opaque_type("PyObject")
+            .parse_callbacks(Box::new(CargoCallbacks))
+            .generate()
+            .expect("Unable to generate bindings");
+    } else {
+        bindings = bindgen::Builder::default()
+            .header(format!("{}/dist/c/include/qiskit.h", qiskit_path_str))
+            .header(format!(
+                "{}/dist/c/include/qiskit/complex.h",
+                qiskit_path_str
+            ))
+            .parse_callbacks(Box::new(CargoCallbacks))
+            .generate()
+            .expect("Unable to generate bindings");
+    }
 
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings

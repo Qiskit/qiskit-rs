@@ -8,6 +8,11 @@ description = "Raw bindings to libqiskit"
 version = "2.3.0"
 
 [dependencies]
+pyo3 = { version = "0.27", features = ["abi3-py310"], optional = true}
+
+[features]
+default = []
+python_binding = ["dep:pyo3"]
 
 [build-dependencies]
 bindgen = "0.72.0"
