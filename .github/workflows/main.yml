@@ -11,14 +11,12 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  tests:
+    name: "tests-${{ matrix.os }}"
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-
     steps:
     - uses: actions/checkout@v4
     - name: Rust fmt
