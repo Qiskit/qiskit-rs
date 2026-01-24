@@ -11,6 +11,7 @@
 // that they have been altered from the originals.
 
 use std::env;
+use std::fs::DirBuilder;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -91,17 +92,68 @@ fn clone_qiskit(source_path: &Path) {
     }
 }
 
-fn build_qiskit(source_path: &Path) {
-    let _ = Command::new("make")
+fn build_qiskit(source_path: &Path) -> (PathBuf, PathBuf) {
+    // build header and dyl files
+    let _ = Command::new("cargo")
         .current_dir(source_path)
-        .env("CARGO_BUILD_TARGET", env::var("TARGET").unwrap())
-        .arg(format!(
-            "C_CARGO_TARGET_DIR=target/{}/release",
-            env::var("TARGET").unwrap()
-        ))
-        .arg("c")
-        .status()
-        .expect("Dynamically linked library generation failed");
+        .arg("rustc")
+        .arg("--release")
+        .arg("--crate-type=cdylib")
+        .arg("-p=qiskit-cext")
+        .arg(format!("--target={}", env::var("TARGET").unwrap()))
+        .output()
+        .expect("Failed to build qiskit-sys");
+
+    // set up output dir structure
+    let c_dir_out = source_path.join("dist/c");
+    let c_dir_include = c_dir_out.join("include");
+    let c_dir_lib = c_dir_out.join("lib");
+    let c_dir_include_qiskit = c_dir_include.join("qiskit");
+
+    DirBuilder::new()
+        .recursive(true)
+        .create(&c_dir_include_qiskit)
+        .expect("Failed qiskit-sys setup");
+    DirBuilder::new()
+        .recursive(true)
+        .create(&c_dir_lib)
+        .expect("Failed qiskit-sys setup");
+
+    let _ = std::fs::copy(
+        source_path.join("target/qiskit.h"),
+        c_dir_include.join("qiskit.h"),
+    )
+    .expect("Failed qiskit-sys setup");
+
+    let _ = std::fs::copy(
+        source_path.join("crates/cext/include/qiskit/attributes.h"),
+        c_dir_include_qiskit.join("attributes.h"),
+    )
+    .expect("Failed qiskit-sys setup");
+
+    let _ = std::fs::copy(
+        source_path.join("crates/cext/include/qiskit/version.h"),
+        c_dir_include_qiskit.join("version.h"),
+    )
+    .expect("Failed qiskit-sys setup");
+
+    let _ = std::fs::copy(
+        source_path.join("crates/cext/include/qiskit/complex.h"),
+        c_dir_include_qiskit.join("complex.h"),
+    )
+    .expect("Failed qiskit-sys setup");
+
+    let libqiskit_path = source_path.join(format!(
+        "target/{}/release/libqiskit_cext.so",
+        env::var("TARGET").unwrap()
+    ));
+    let _ = std::fs::copy(libqiskit_path, c_dir_lib.join("libqiskit.so"))
+        .expect("Failed qiskit-sys setup");
+
+    (
+        c_dir_include.join("qiskit.h"),
+        c_dir_lib.join("libqiskit.so"),
+    )
 }
 
 fn build_qiskit_from_source() {
@@ -133,6 +185,11 @@ fn build_qiskit_from_source() {
     let bindings = bindgen::Builder::default()
         .header(format!("{}/dist/c/include/qiskit.h", repo_dir_str))
         .header(format!("{}/dist/c/include/qiskit/complex.h", repo_dir_str))
+        .header(format!(
+            "{}/dist/c/include/qiskit/attributes.h",
+            repo_dir_str
+        ))
+        .header(format!("{}/dist/c/include/qiskit/version.h", repo_dir_str))
         .parse_callbacks(Box::new(CargoCallbacks))
         .generate()
         .expect("Unable to generate bindings");
@@ -169,6 +226,14 @@ fn build_qiskit_from_path(qiskit_path_str: String) {
         .header(format!("{}/dist/c/include/qiskit.h", qiskit_path_str))
         .header(format!(
             "{}/dist/c/include/qiskit/complex.h",
+            qiskit_path_str
+        ))
+        .header(format!(
+            "{}/dist/c/include/qiskit/attributes.h",
+            qiskit_path_str
+        ))
+        .header(format!(
+            "{}/dist/c/include/qiskit/version.h",
             qiskit_path_str
         ))
         .parse_callbacks(Box::new(CargoCallbacks))
