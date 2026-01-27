@@ -125,7 +125,7 @@ fn build_qiskit_from_source() {
     generate_bindings(repo_dir_str);
 }
 
-fn build_qiskit_from_path(qiskit_path_str: &str) {
+fn generate_bindings(qiskit_path_str: &str) {
     let qiskit_path = Path::new(&qiskit_path_str);
 
     match qiskit_path.try_exists() {
@@ -136,10 +136,6 @@ fn build_qiskit_from_path(qiskit_path_str: &str) {
         Err(e) => panic!("{e:?}"),
     }
 
-    generate_bindings(qiskit_path_str);
-}
-
-fn generate_bindings(qiskit_path_str: &str) {
     println!("cargo:rustc-link-search={}/dist/c/lib", qiskit_path_str);
     println!("cargo:rustc-link-lib=qiskit");
 
@@ -172,7 +168,7 @@ fn main() {
             build_qiskit_from_source();
         }
         InstallMethod::Path(path) => {
-            build_qiskit_from_path(&path);
+            generate_bindings(&path);
         }
     };
 }
