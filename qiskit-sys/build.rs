@@ -123,10 +123,6 @@ fn build_qiskit_from_source() {
 
     build_qiskit(source_path);
 
-    println!(
-        "cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib",
-        repo_dir_str
-    );
     println!("cargo:rustc-link-search={}/dist/c/lib", repo_dir_str);
     println!("cargo:rustc-link-lib=qiskit");
 
@@ -154,14 +150,6 @@ fn build_qiskit_from_path(qiskit_path_str: String) {
         Err(e) => panic!("{e:?}"),
     }
 
-    println!(
-        "cargo:rustc-env=LD_LIBRARY_PATH={}/dist/c/lib",
-        qiskit_path_str
-    );
-    println!(
-        "cargo:rustc-env=DYLD_LIBRARY_PATH={}/dist/c/lib",
-        qiskit_path_str
-    );
     println!("cargo:rustc-link-search={}/dist/c/lib", qiskit_path_str);
     println!("cargo:rustc-link-lib=qiskit");
 
