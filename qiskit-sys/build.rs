@@ -119,27 +119,13 @@ fn build_qiskit_from_source() {
         Err(e) => panic!("{e:?}"),
     }
 
-    let repo_dir_str: &str = source_path.to_str().unwrap();
-
     build_qiskit(source_path);
 
-    println!("cargo:rustc-link-search={}/dist/c/lib", repo_dir_str);
-    println!("cargo:rustc-link-lib=qiskit");
-
-    let bindings = bindgen::Builder::default()
-        .header(format!("{}/dist/c/include/qiskit.h", repo_dir_str))
-        .header(format!("{}/dist/c/include/qiskit/complex.h", repo_dir_str))
-        .parse_callbacks(Box::new(CargoCallbacks))
-        .generate()
-        .expect("Unable to generate bindings");
-
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join("bindings.rs"))
-        .expect("Couldn't write bindings!");
+    let repo_dir_str = source_path.to_str().unwrap();
+    generate_bindings(repo_dir_str);
 }
 
-fn build_qiskit_from_path(qiskit_path_str: String) {
+fn build_qiskit_from_path(qiskit_path_str: &str) {
     let qiskit_path = Path::new(&qiskit_path_str);
 
     match qiskit_path.try_exists() {
@@ -150,6 +136,10 @@ fn build_qiskit_from_path(qiskit_path_str: String) {
         Err(e) => panic!("{e:?}"),
     }
 
+    generate_bindings(qiskit_path_str);
+}
+
+fn generate_bindings(qiskit_path_str: &str) {
     println!("cargo:rustc-link-search={}/dist/c/lib", qiskit_path_str);
     println!("cargo:rustc-link-lib=qiskit");
 
@@ -182,7 +172,7 @@ fn main() {
             build_qiskit_from_source();
         }
         InstallMethod::Path(path) => {
-            build_qiskit_from_path(path);
+            build_qiskit_from_path(&path);
         }
     };
 }
