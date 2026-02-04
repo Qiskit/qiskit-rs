@@ -11,10 +11,12 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  tests:
+    name: "tests-${{ matrix.os }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
     - uses: actions/checkout@v4
     - name: Rust fmt
@@ -30,7 +32,7 @@ jobs:
     - name: upload docs build
       uses: actions/upload-artifact@v5
       with:
-        name: docs
+        name: ${{ matrix.os }}-docs
         path: |
           target/doc/qiskit_rs
           target/doc/qiskit_sys
