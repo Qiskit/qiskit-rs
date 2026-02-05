@@ -120,7 +120,6 @@ fn build_qiskit_from_source() {
     }
 
     build_qiskit(source_path);
-
     let repo_dir_str = source_path.to_str().unwrap();
     generate_bindings(repo_dir_str);
 }
