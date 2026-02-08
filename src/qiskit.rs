@@ -11,6 +11,7 @@
 // that they have been altered from the originals.
 
 use qiskit_sys::qk_circuit_gate;
+use std::collections::BTreeSet;
 use std::ffi::{CStr, CString};
 
 #[derive(PartialEq, Eq, Debug)]
@@ -128,7 +129,23 @@ impl QuantumCircuit {
         unsafe { qiskit_sys::qk_circuit_num_clbits(self.circuit) }
     }
 
-    fn gate(&mut self, gate: qiskit_sys::QkGate, qubits: &[u32], params: &[f64]) -> QiskitError {
+    /// Apply a [QkGate] to the circuit.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that all qubit indices are less than num_qubits()
+    /// and that no invalid combination of qubit indices is used.
+    /// For example, [cx] can not use the same qubit index
+    /// for both control and target qubit.
+    ///
+    /// The caller must also ensure that the correct number of parameters is passed
+    /// for the [QkGate] used.
+    unsafe fn gate(
+        &mut self,
+        gate: qiskit_sys::QkGate,
+        qubits: &[u32],
+        params: &[f64],
+    ) -> QiskitError {
         let retval = if params.is_empty() {
             unsafe { qk_circuit_gate(self.circuit, gate, qubits.as_ptr(), std::ptr::null()) }
         } else {
@@ -136,33 +153,74 @@ impl QuantumCircuit {
         };
         qk_to_qiskit_error(retval)
     }
+
+    /// Check if all qubit indices are unique.
+    fn unique_qubits_check(&self, qubits: &[u32]) -> bool {
+        qubits.iter().collect::<BTreeSet<_>>().len() == qubits.len()
+    }
+
+    /// Check if all qubits are within the range of the circuit.
+    ///
+    /// Mutable as `num_qubits()` takes a mutable reference.
+    fn qubits_in_range_check(&mut self, qubits: &[u32]) -> bool {
+        qubits.iter().all(|q| q < &self.num_qubits())
+    }
+
     /// Apply a double-CNOT gate.
     pub fn dcx(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_DCX, &[qubit1, qubit2], &[])
+        if !self.unique_qubits_check(&[qubit1, qubit2])
+            || !self.qubits_in_range_check(&[qubit1, qubit2])
+        {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_DCX, &[qubit1, qubit2], &[]) }
     }
+
     /// Apply an echoed cross-resonance gate.
     pub fn ecr(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_ECR, &[qubit1, qubit2], &[])
+        if !self.unique_qubits_check(&[qubit1, qubit2])
+            || !self.qubits_in_range_check(&[qubit1, qubit2])
+        {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_ECR, &[qubit1, qubit2], &[]) }
     }
     /// Apply a Hadamard gate.
     pub fn h(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_H, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_H, &[qubit], &[]) }
     }
     /// Apply an Identity gate.
     pub fn id(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_I, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_I, &[qubit], &[]) }
     }
     /// Apply an iSWAP gate.
     pub fn iswap(&mut self, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_ISwap, &[qubit1, qubit2], &[])
+        if !self.unique_qubits_check(&[qubit1, qubit2])
+            || !self.qubits_in_range_check(&[qubit1, qubit2])
+        {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_ISwap, &[qubit1, qubit2], &[]) }
     }
     /// Apply a Phase gate, a single-qubit rotation about the Z axis.
     pub fn p(&mut self, theta: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_Phase, &[qubit], &[theta])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_Phase, &[qubit], &[theta]) }
     }
     /// Apply an RGate
     pub fn r(&mut self, theta: f64, phi: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_R, &[qubit], &[theta, phi])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_R, &[qubit], &[theta, phi]) }
     }
     /// Apply a simplified 3-controlled Toffoli gate.
     pub fn rcccx(
@@ -172,11 +230,11 @@ impl QuantumCircuit {
         control_qubit3: u32,
         target_qubit: u32,
     ) -> QiskitError {
-        self.gate(
-            qiskit_sys::QkGate_QkGate_RC3X,
-            &[control_qubit1, control_qubit2, control_qubit3, target_qubit],
-            &[],
-        )
+        let qubits = &[control_qubit1, control_qubit2, control_qubit3, target_qubit];
+        if !self.unique_qubits_check(qubits) || !self.qubits_in_range_check(qubits) {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RC3X, qubits, &[]) }
     }
     /// Apply a simplified Toffoli gate.
     ///
@@ -201,11 +259,11 @@ impl QuantumCircuit {
         control_qubit2: u32,
         target_qubit: u32,
     ) -> QiskitError {
-        self.gate(
-            qiskit_sys::QkGate_QkGate_RCCX,
-            &[control_qubit1, control_qubit2, target_qubit],
-            &[],
-        )
+        let qubits = &[control_qubit1, control_qubit2, target_qubit];
+        if !self.unique_qubits_check(qubits) || !self.qubits_in_range_check(qubits) {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RCCX, qubits, &[]) }
     }
     /// Apply a single-qubit rotation about the X axis.
     ///
@@ -224,7 +282,10 @@ impl QuantumCircuit {
     /// qc.rx(PI / 2.0, 0);
     /// ```
     pub fn rx(&mut self, theta: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_RX, &[qubit], &[theta])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RX, &[qubit], &[theta]) }
     }
     /// Apply a 2-qubit rotation about XX.
     ///
@@ -244,75 +305,139 @@ impl QuantumCircuit {
     /// qc.rxx(PI / 2.0, 0, 1);
     /// ```
     pub fn rxx(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_RXX, &[qubit1, qubit2], &[theta])
+        if !self.unique_qubits_check(&[qubit1, qubit2])
+            || !self.qubits_in_range_check(&[qubit1, qubit2])
+        {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RXX, &[qubit1, qubit2], &[theta]) }
     }
+
     /// Apply a single-qubit rotation about the Y axis.
     pub fn ry(&mut self, theta: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit], &[theta])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit], &[theta]) }
     }
     /// Apply a 2-qubit rotation about YY.
     pub fn ryy(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_RY, &[qubit1, qubit2], &[theta])
+        if !self.unique_qubits_check(&[qubit1, qubit2])
+            || !self.qubits_in_range_check(&[qubit1, qubit2])
+        {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RYY, &[qubit1, qubit2], &[theta]) }
     }
     /// Apply a single-qubit rotation about the Z axis.
     pub fn rz(&mut self, phi: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_RZ, &[qubit], &[phi])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RZ, &[qubit], &[phi]) }
     }
     /// Apply a 2-qubit rotation about ZX.
     pub fn rzx(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_RZX, &[qubit1, qubit2], &[theta])
+        if !self.unique_qubits_check(&[qubit1, qubit2])
+            || !self.qubits_in_range_check(&[qubit1, qubit2])
+        {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RZX, &[qubit1, qubit2], &[theta]) }
     }
     /// Apply a 2-qubit rotation about ZX.
     pub fn rzz(&mut self, theta: f64, qubit1: u32, qubit2: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_RZZ, &[qubit1, qubit2], &[theta])
+        if !self.unique_qubits_check(&[qubit1, qubit2])
+            || !self.qubits_in_range_check(&[qubit1, qubit2])
+        {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_RZZ, &[qubit1, qubit2], &[theta]) }
     }
     /// Apply a single qubit S gate.
     pub fn s(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_S, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_S, &[qubit], &[]) }
     }
     /// Apply a single qubit S-adjoint gate.
     pub fn sdg(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_Sdg, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_Sdg, &[qubit], &[]) }
     }
     /// Apply a single-qubit Sqrt(X) gate.
     pub fn sx(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_SX, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_SX, &[qubit], &[]) }
     }
     /// Apply an inverse single-qubit Sqrt(X) gate.
     pub fn sxdg(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_SXdg, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_SXdg, &[qubit], &[]) }
     }
     /// Apply a single qubit T gate.
     pub fn t(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_T, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_T, &[qubit], &[]) }
     }
     /// Apply a single qubit T-adjoint gate.
     pub fn tdg(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_Tdg, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_Tdg, &[qubit], &[]) }
     }
     /// Apply a generic single-qubit rotation.
     pub fn u(&mut self, theta: f64, phi: f64, lam: f64, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_U, &[qubit], &[theta, phi, lam])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_U, &[qubit], &[theta, phi, lam]) }
     }
     /// Apply a single-qubit Pauli-X gate.
     pub fn x(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_X, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_X, &[qubit], &[]) }
     }
     /// Apply a single-qubit Pauli-Y gate.
     pub fn y(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_Y, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_Y, &[qubit], &[]) }
     }
     /// Apply a single-qubit Pauli-Z gate.
     pub fn z(&mut self, qubit: u32) -> QiskitError {
-        self.gate(qiskit_sys::QkGate_QkGate_Z, &[qubit], &[])
+        if qubit >= self.num_qubits() {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe { self.gate(qiskit_sys::QkGate_QkGate_Z, &[qubit], &[]) }
     }
     /// Apply a controlled-X gate.
     pub fn cx(&mut self, control_qubit: u32, target_qubit: u32) -> QiskitError {
-        self.gate(
-            qiskit_sys::QkGate_QkGate_CX,
-            &[control_qubit, target_qubit],
-            &[],
-        )
+        if !self.unique_qubits_check(&[control_qubit, target_qubit])
+            || !self.qubits_in_range_check(&[control_qubit, target_qubit])
+        {
+            return QiskitError::MismatchedQubits;
+        }
+        unsafe {
+            self.gate(
+                qiskit_sys::QkGate_QkGate_CX,
+                &[control_qubit, target_qubit],
+                &[],
+            )
+        }
     }
     /// Measure a qubit in the Z basis into a classical bit.
     pub fn measure(&mut self, qubit: u32, clbit: u32) -> QiskitError {
@@ -477,7 +602,8 @@ impl<'a> Iterator for CircuitInstructions<'a> {
 #[cfg(test)]
 mod tests {
     use super::QuantumCircuit;
-    use std::f64::consts::FRAC_PI_2;
+    use crate::QiskitError;
+    use std::{f64::consts::FRAC_PI_2, u32};
 
     #[test]
     fn test_circuit_instructions() {
@@ -485,12 +611,12 @@ mod tests {
         qc.rz(FRAC_PI_2, 0);
         qc.sx(0);
         qc.rz(FRAC_PI_2, 0);
-        for target in 0..100u32 {
+        for target in 1..100u32 {
             qc.cx(0, target);
             qc.measure(target, target);
         }
         let res = qc.instructions();
-        let mut target: u32 = 0;
+        let mut target: u32 = 1;
         for (idx, inst) in res.enumerate() {
             if idx == 0 || idx == 2 {
                 assert_eq!(inst.name, "rz");
@@ -516,5 +642,129 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_too_few_qubits_0() {
+        let mut qc = QuantumCircuit::new(0, 0);
+        assert_eq!(qc.id(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.x(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.y(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.z(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.h(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.s(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.sx(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.sdg(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.sxdg(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.t(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.tdg(0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.u(1., 1., 1., 0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rx(1., 0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.ry(1., 0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rz(1., 0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.p(1., 0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.r(1., 1., 0), QiskitError::MismatchedQubits);
+        assert_eq!(qc.dcx(0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.ecr(0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.iswap(0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rxx(1., 0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.ryy(1., 0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rzz(1., 0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rzx(1., 0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.cx(0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rccx(0, 1, 2), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rcccx(0, 1, 2, 3), QiskitError::MismatchedQubits);
+    }
+
+    #[test]
+    fn test_too_few_qubits_1() {
+        let mut qc = QuantumCircuit::new(1, 1);
+        assert_eq!(qc.id(0), QiskitError::Success);
+        assert_eq!(qc.x(0), QiskitError::Success);
+        assert_eq!(qc.y(0), QiskitError::Success);
+        assert_eq!(qc.z(0), QiskitError::Success);
+        assert_eq!(qc.h(0), QiskitError::Success);
+        assert_eq!(qc.s(0), QiskitError::Success);
+        assert_eq!(qc.sx(0), QiskitError::Success);
+        assert_eq!(qc.sdg(0), QiskitError::Success);
+        assert_eq!(qc.sxdg(0), QiskitError::Success);
+        assert_eq!(qc.t(0), QiskitError::Success);
+        assert_eq!(qc.tdg(0), QiskitError::Success);
+        assert_eq!(qc.u(1., 1., 1., 0), QiskitError::Success);
+        assert_eq!(qc.rx(1., 0), QiskitError::Success);
+        assert_eq!(qc.ry(1., 0), QiskitError::Success);
+        assert_eq!(qc.rz(1., 0), QiskitError::Success);
+        assert_eq!(qc.p(1., 0), QiskitError::Success);
+        assert_eq!(qc.r(1., 1., 0), QiskitError::Success);
+        assert_eq!(qc.dcx(0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.ecr(0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.iswap(0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rxx(1., 0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.ryy(1., 0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rzz(1., 0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rzx(1., 0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.cx(0, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rccx(0, 1, 2), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rcccx(0, 1, 2, 3), QiskitError::MismatchedQubits);
+    }
+
+    #[test]
+    fn test_too_few_qubits_2() {
+        let mut qc = QuantumCircuit::new(2, 2);
+        assert_eq!(qc.dcx(0, 1), QiskitError::Success);
+        assert_eq!(qc.ecr(0, 1), QiskitError::Success);
+        assert_eq!(qc.iswap(0, 1), QiskitError::Success);
+        assert_eq!(qc.rxx(1., 0, 1), QiskitError::Success);
+        assert_eq!(qc.ryy(1., 0, 1), QiskitError::Success);
+        assert_eq!(qc.rzz(1., 0, 1), QiskitError::Success);
+        assert_eq!(qc.rzx(1., 0, 1), QiskitError::Success);
+        assert_eq!(qc.cx(0, 1), QiskitError::Success);
+        assert_eq!(qc.rccx(0, 1, 2), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rcccx(0, 1, 2, 3), QiskitError::MismatchedQubits);
+    }
+
+    #[test]
+    fn test_too_few_qubits_3() {
+        let mut qc = QuantumCircuit::new(3, 3);
+        assert_eq!(qc.rccx(0, 1, 2), QiskitError::Success);
+        assert_eq!(qc.rcccx(0, 1, 2, 3), QiskitError::MismatchedQubits);
+    }
+
+    #[test]
+    fn test_too_few_qubits_4() {
+        let mut qc = QuantumCircuit::new(4, 4);
+        assert_eq!(qc.rcccx(0, 1, 2, 3), QiskitError::Success);
+    }
+
+    #[test]
+    fn test_invalid_qubit_index() {
+        let mut qc = QuantumCircuit::new(5, 0);
+        assert_eq!(qc.id(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.x(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.y(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.z(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.h(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.s(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.sx(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.sdg(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.sxdg(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.t(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.tdg(u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.u(1., 1., 1., u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rx(1., u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.ry(1., u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rz(1., u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.p(1., u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.r(1., 1., u32::MAX), QiskitError::MismatchedQubits);
+        assert_eq!(qc.dcx(u32::MAX, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.ecr(u32::MAX, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.iswap(u32::MAX, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rxx(1., u32::MAX, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.ryy(1., u32::MAX, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rzz(1., u32::MAX, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rzx(1., u32::MAX, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.cx(u32::MAX, 1), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rccx(u32::MAX, 1, 2), QiskitError::MismatchedQubits);
+        assert_eq!(qc.rcccx(u32::MAX, 1, 2, 3), QiskitError::MismatchedQubits);
     }
 }
