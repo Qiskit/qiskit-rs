@@ -473,18 +473,48 @@ impl<'a> Iterator for CircuitInstructions<'a> {
     }
 }
 
-fn bitterm_to_qkbitterm(bitterm: char) -> qiskit_sys::QkBitTerm {
-    match bitterm {
-        'X' => qiskit_sys::QkBitTerm_QkBitTerm_X,
-        'Y' => qiskit_sys::QkBitTerm_QkBitTerm_Y,
-        'Z' => qiskit_sys::QkBitTerm_QkBitTerm_Z,
-        '+' => qiskit_sys::QkBitTerm_QkBitTerm_Plus,
-        '-' => qiskit_sys::QkBitTerm_QkBitTerm_Minus,
-        'r' => qiskit_sys::QkBitTerm_QkBitTerm_Right,
-        'l' => qiskit_sys::QkBitTerm_QkBitTerm_Left,
-        '0' => qiskit_sys::QkBitTerm_QkBitTerm_Zero,
-        '1' => qiskit_sys::QkBitTerm_QkBitTerm_One,
-        _ => panic!("Invalid bitterm: {}", bitterm.to_string()),
+#[cfg(test)]
+mod circuit_tests {
+    use super::QuantumCircuit;
+    use std::f64::consts::FRAC_PI_2;
+
+    #[test]
+    fn test_circuit_instructions() {
+        let mut qc = QuantumCircuit::new(100, 100);
+        qc.rz(FRAC_PI_2, 0);
+        qc.sx(0);
+        qc.rz(FRAC_PI_2, 0);
+        for target in 0..100u32 {
+            qc.cx(0, target);
+            qc.measure(target, target);
+        }
+        let res = qc.instructions();
+        let mut target: u32 = 0;
+        for (idx, inst) in res.enumerate() {
+            if idx == 0 || idx == 2 {
+                assert_eq!(inst.name, "rz");
+                assert_eq!(&[0,], inst.qubits);
+                assert_eq!(inst.clbits, &[]);
+                assert_eq!(&[FRAC_PI_2,], inst.params);
+            } else if idx == 1 {
+                assert_eq!(inst.name, "sx");
+                assert_eq!(&[0,], inst.qubits);
+                assert_eq!(inst.clbits, &[]);
+                assert_eq!(inst.params, &[]);
+            } else {
+                let expected_name = if (idx - 3) % 2 == 0 { "cx" } else { "measure" };
+                assert_eq!(expected_name, inst.name);
+                assert_eq!(inst.params, &[]);
+                if expected_name == "measure" {
+                    assert_eq!(inst.qubits, &[target]);
+                    assert_eq!(inst.clbits, &[target]);
+                    target += 1;
+                } else {
+                    assert_eq!(inst.qubits, &[0, target]);
+                    assert_eq!(inst.clbits, &[]);
+                }
+            }
+        }
     }
 }
 
@@ -496,17 +526,78 @@ pub struct Observable {
 /// A complex, double-precision number representation.
 pub type Complex64 = qiskit_sys::QkComplex64;
 
-impl Observable {
+#[derive(Clone, Copy, PartialEq, Debug)]
+#[repr(u8)]
+pub enum BitTerm {
+    X = qiskit_sys::QkBitTerm_QkBitTerm_X,
+    Y = qiskit_sys::QkBitTerm_QkBitTerm_Y,
+    Z = qiskit_sys::QkBitTerm_QkBitTerm_Z,
+    Plus = qiskit_sys::QkBitTerm_QkBitTerm_Plus,
+    Minus = qiskit_sys::QkBitTerm_QkBitTerm_Minus,
+    Right = qiskit_sys::QkBitTerm_QkBitTerm_Right,
+    Left = qiskit_sys::QkBitTerm_QkBitTerm_Left,
+    Zero = qiskit_sys::QkBitTerm_QkBitTerm_Zero,
+    One = qiskit_sys::QkBitTerm_QkBitTerm_One,
+}
+
+impl TryFrom<u8> for BitTerm {
+    type Error = ();
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            qiskit_sys::QkBitTerm_QkBitTerm_X => Ok(BitTerm::X),
+            qiskit_sys::QkBitTerm_QkBitTerm_Y => Ok(BitTerm::Y),
+            qiskit_sys::QkBitTerm_QkBitTerm_Z => Ok(BitTerm::Z),
+            qiskit_sys::QkBitTerm_QkBitTerm_Plus => Ok(BitTerm::Plus),
+            qiskit_sys::QkBitTerm_QkBitTerm_Minus => Ok(BitTerm::Minus),
+            qiskit_sys::QkBitTerm_QkBitTerm_Right => Ok(BitTerm::Right),
+            qiskit_sys::QkBitTerm_QkBitTerm_Left => Ok(BitTerm::Left),
+            qiskit_sys::QkBitTerm_QkBitTerm_Zero => Ok(BitTerm::Zero),
+            qiskit_sys::QkBitTerm_QkBitTerm_One => Ok(BitTerm::One),
+            _ => Err(()),
+        }
+    }
+}
+
+pub struct BitTermList(Vec<BitTerm>);
+
+impl<'a> BitTermList {
+    pub fn new() -> BitTermList {
+        BitTermList(Vec::new())
+    }
+    pub fn add(&mut self, elem: BitTerm) {
+        self.0.push(elem);
+    }
+    pub fn len(self) -> usize {
+        self.0.len()
+    }
+    pub fn as_slice(&self) -> &[BitTerm] {
+        self.0.as_slice()
+    }
+}
+
+impl<'a> FromIterator<BitTerm> for BitTermList {
+    fn from_iter<T: IntoIterator<Item = BitTerm>>(iter: T) -> Self {
+        let mut bit_term_list = BitTermList::new();
+
+        for i in iter {
+            bit_term_list.add(i);
+        }
+
+        bit_term_list
+    }
+}
+
+impl<'a> Observable {
     /// Create a new observable
     ///
     /// # Example
     ///
     /// ```
-    /// use qiskit_rs::{Observable, Complex64};
+    /// use qiskit_rs::{Observable, Complex64, BitTerm};
     //
     /// let num_qubits = 100;
     /// let coeffs = [Complex64{re: 1.0, im: -1.0}, Complex64{re: 1.0, im: -1.0}];
-    /// let bits = ['0', '1', '+', '-'];
+    /// let bits = [BitTerm::Zero, BitTerm::One, BitTerm::Plus, BitTerm::Minus];
     /// let indices = [0, 1, 98, 99];
     /// let boundaries = [0, 2, 4];
     ///
@@ -515,7 +606,7 @@ impl Observable {
     pub fn new(
         num_qubits: u32,
         coeffs: &[Complex64],
-        bit_terms: &[char],
+        bit_terms: &[BitTerm],
         indices: &[u32],
         boundaries: &[usize],
     ) -> Observable {
@@ -524,10 +615,7 @@ impl Observable {
         assert!(coeffs.len() + 1 == boundaries.len());
 
         let mut coeffs: Vec<qiskit_sys::QkComplex64> = Vec::from(coeffs);
-        let mut bit_terms: Vec<u8> = bit_terms
-            .into_iter()
-            .map(|x| bitterm_to_qkbitterm(*x))
-            .collect();
+        let mut bit_terms: Vec<u8> = bit_terms.iter().map(|bitterm| *(bitterm) as u8).collect();
         let mut indices = Vec::from(indices);
         let mut boundaries = Vec::from(boundaries);
         Observable {
@@ -593,11 +681,11 @@ impl Observable {
     /// Get the list of coefficients of an observable
     ///
     /// ```
-    /// use qiskit_rs::{Observable, Complex64};
+    /// use qiskit_rs::{Observable, Complex64, BitTerm};
     ///
     /// let num_qubits = 100;
     /// let coeffs = [Complex64{re: 1.0, im: -1.0}, Complex64{re: 1.0, im: -1.0}];
-    /// let bits = ['0', '1', '+', '-'];
+    /// let bits = [BitTerm::Zero, BitTerm::One, BitTerm::Plus, BitTerm::Minus];
     /// let indices = [0, 1, 98, 99];
     /// let boundaries = [0, 2, 4];
     ///
@@ -616,10 +704,10 @@ impl Observable {
     /// Get the list of indices of an observable
     ///
     /// ```
-    /// use qiskit_rs::{Observable, Complex64};
+    /// use qiskit_rs::{Observable, Complex64, BitTerm};
     /// let num_qubits = 100;
     /// let coeffs = [Complex64{re: 1.0, im: -1.0}, Complex64{re: 1.0, im: -1.0}];
-    /// let bits = ['0', '1', '+', '-'];
+    /// let bits = [BitTerm::Zero, BitTerm::One, BitTerm::Plus, BitTerm::Minus];
     /// let indices = [0, 1, 98, 99];
     /// let boundaries = [0, 2, 4];
     /// let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
@@ -632,6 +720,51 @@ impl Observable {
         let indices_ptr = unsafe { qiskit_sys::qk_obs_indices(self.observable) };
         let slice = unsafe { std::slice::from_raw_parts(indices_ptr, num_indices) };
         slice.iter()
+    }
+    /// Get the list of boundaries of an observable
+    ///
+    /// ```
+    /// use qiskit_rs::{Observable, Complex64, BitTerm};
+    /// let num_qubits = 100;
+    /// let coeffs = [Complex64{re: 1.0, im: -1.0}, Complex64{re: 1.0, im: -1.0}];
+    /// let bits = [BitTerm::Zero, BitTerm::One, BitTerm::Plus, BitTerm::Minus];
+    /// let indices = [0, 1, 98, 99];
+    /// let boundaries = [0, 2, 4];
+    /// let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
+    /// for b in obs.boundaries() {
+    ///     print!("Boundary: {}", b);
+    /// }
+    /// ```
+    pub fn boundaries(&self) -> std::slice::Iter<'_, usize> {
+        let num_boundaries: usize = unsafe { qiskit_sys::qk_obs_num_terms(self.observable) } + 1;
+        let boundaries_ptr = unsafe { qiskit_sys::qk_obs_boundaries(self.observable) };
+        let slice = unsafe { std::slice::from_raw_parts(boundaries_ptr, num_boundaries) };
+        slice.iter()
+    }
+    /// Get the list of bitterms of an observable
+    ///
+    /// ```
+    /// use qiskit_rs::{Observable, Complex64, BitTerm};
+    /// let num_qubits = 100;
+    /// let coeffs = [Complex64{re: 1.0, im: -1.0}, Complex64{re: 1.0, im: -1.0}];
+    /// let bits = [BitTerm::Zero, BitTerm::One, BitTerm::Plus, BitTerm::Minus];
+    /// let indices = [0, 1, 98, 99];
+    /// let boundaries = [0, 2, 4];
+    /// let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
+    /// for b in obs.bit_terms().as_slice().iter() {
+    ///     print!("Bit Terms: {:?}", b);
+    /// }
+    /// ```
+    pub fn bit_terms(&self) -> BitTermList {
+        let num_bit_terms: usize = unsafe { qiskit_sys::qk_obs_len(self.observable) };
+        let bit_terms_ptr = unsafe { qiskit_sys::qk_obs_bit_terms(self.observable) };
+        let slice: &[u8] = unsafe { std::slice::from_raw_parts(bit_terms_ptr, num_bit_terms) };
+        let mut qk_bit_terms = BitTermList::new();
+        for item in slice {
+            let bitterm = BitTerm::try_from(*item).unwrap();
+            qk_bit_terms.add(bitterm);
+        }
+        qk_bit_terms
     }
     /// Get the number of bit terms/indices in the observable.
     pub fn len(&self) -> usize {
@@ -700,98 +833,47 @@ impl Drop for Observable {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{Complex64, Observable, QuantumCircuit};
-    use std::f64::consts::FRAC_PI_2;
+mod observable_tests {
+    use crate::qiskit::BitTerm;
 
+    use super::{Complex64, Observable};
     #[test]
-    fn test_circuit_instructions() {
-        let mut qc = QuantumCircuit::new(100, 100);
-        qc.rz(FRAC_PI_2, 0);
-        qc.sx(0);
-        qc.rz(FRAC_PI_2, 0);
-        for target in 0..100u32 {
-            qc.cx(0, target);
-            qc.measure(target, target);
-        }
-        let res = qc.instructions();
-        let mut target: u32 = 0;
-        for (idx, inst) in res.enumerate() {
-            if idx == 0 || idx == 2 {
-                assert_eq!(inst.name, "rz");
-                assert_eq!(&[0,], inst.qubits);
-                assert_eq!(inst.clbits, &[]);
-                assert_eq!(&[FRAC_PI_2,], inst.params);
-            } else if idx == 1 {
-                assert_eq!(inst.name, "sx");
-                assert_eq!(&[0,], inst.qubits);
-                assert_eq!(inst.clbits, &[]);
-                assert_eq!(inst.params, &[]);
-            } else {
-                let expected_name = if (idx - 3) % 2 == 0 { "cx" } else { "measure" };
-                assert_eq!(expected_name, inst.name);
-                assert_eq!(inst.params, &[]);
-                if expected_name == "measure" {
-                    assert_eq!(inst.qubits, &[target]);
-                    assert_eq!(inst.clbits, &[target]);
-                    target += 1;
-                } else {
-                    assert_eq!(inst.qubits, &[0, target]);
-                    assert_eq!(inst.clbits, &[]);
-                }
-            }
-        }
-    }
-    #[test]
-    fn test_observables() {
+    fn test_new_observable() {
         let num_qubits = 100;
         let coeffs = [
             Complex64 { re: 1.0, im: -1.0 },
             Complex64 { re: 1.0, im: -1.0 },
         ];
-        let bits = ['0', '1', '+', '-'];
+        let bits = [BitTerm::Zero, BitTerm::One, BitTerm::Plus, BitTerm::Minus];
         let indices = [0, 1, 98, 99];
         let boundaries = [0, 2, 4];
 
         let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
         assert_eq!(obs.num_terms(), 2);
-
-        let obs_b = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
-        assert!(obs.equal(&obs_b));
-
-        assert_eq!(obs.str(), obs_b.str());
-    }
-    #[test]
-    fn test_iterate_coeffs() {
-        let num_qubits = 100;
-        let coeffs = [
-            Complex64 { re: 1.0, im: -1.0 },
-            Complex64 { re: 1.0, im: -1.0 },
-        ];
-        let bits = ['0', '1', '+', '-'];
-        let indices = [0, 1, 98, 99];
-        let boundaries = [0, 2, 4];
-
-        let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
-
+        assert_eq!(obs.coeffs().len(), coeffs.len());
         for (i, coef) in obs.coeffs().enumerate() {
             assert_eq!(coef.re, coeffs[i].re);
             assert_eq!(coef.im, coeffs[i].im);
         }
-    }
-    #[test]
-    fn test_iterate_indices() {
-        let num_qubits = 100;
-        let coeffs = [
-            Complex64 { re: 1.0, im: -1.0 },
-            Complex64 { re: 1.0, im: -1.0 },
-        ];
-        let bits = ['0', '1', '+', '-'];
-        let indices = [0, 1, 98, 99];
-        let boundaries = [0, 2, 4];
-        let obs = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
+        assert_eq!(obs.indices().len(), indices.len());
         for (i, idx) in obs.indices().enumerate() {
             assert_eq!(*idx, indices[i]);
         }
+        assert_eq!(obs.boundaries().len(), boundaries.len());
+        for (i, idx) in obs.boundaries().enumerate() {
+            assert_eq!(*idx, boundaries[i]);
+        }
+
+        assert_eq!(obs.bit_terms().len(), bits.len());
+        for (i, idx) in obs.bit_terms().as_slice().iter().enumerate() {
+            assert_eq!(*idx, bits[i]);
+        }
+
+        assert_eq!(obs.coeffs().len() + 1, obs.boundaries().len());
+        assert_eq!(obs.bit_terms().len(), obs.indices().len());
+
+        let obs_b = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
+        assert!(obs.equal(&obs_b));
+        assert_eq!(obs.str(), obs_b.str());
     }
 }

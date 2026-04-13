@@ -47,7 +47,7 @@
 //! #### Clone
 //!
 //! Automatically clones and builds the qiskit c api from source.
-//!       
+//!
 //! <div class="warning">Cloning and building from source is very slow!</div>
 //!
 //! ```bash
@@ -72,5 +72,5 @@
 pub mod qiskit;
 
 pub use qiskit::{
-    ClassicalRegister, Complex64, Observable, QiskitError, QuantumCircuit, QuantumRegister,
+    BitTerm, ClassicalRegister, Complex64, Observable, QiskitError, QuantumCircuit, QuantumRegister,
 };
