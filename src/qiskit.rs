@@ -10,7 +10,7 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-use qiskit_sys::qk_circuit_gate;
+use qiskit_sys::{qk_circuit_gate, QkParam};
 use std::collections::BTreeSet;
 use std::ffi::{CStr, CString};
 
@@ -538,7 +538,8 @@ pub struct CircuitInstruction<'a> {
     /// The clbits the instruction acts upon
     pub clbits: &'a [u32],
     /// The parameters for the instruction
-    pub params: &'a [f64],
+    // TODO: Use proper rust native QkParam alternative
+    pub params: &'a [*mut QkParam],
     inst: qiskit_sys::QkCircuitInstruction,
 }
 
@@ -601,6 +602,7 @@ impl<'a> Iterator for CircuitInstructions<'a> {
 
 #[cfg(test)]
 mod tests {
+    use qiskit_sys::qk_param_as_real;
     use super::QuantumCircuit;
     use crate::QiskitError;
     use std::{f64::consts::FRAC_PI_2, u32};
@@ -622,7 +624,8 @@ mod tests {
                 assert_eq!(inst.name, "rz");
                 assert_eq!(&[0,], inst.qubits);
                 assert_eq!(inst.clbits, &[]);
-                assert_eq!(&[FRAC_PI_2,], inst.params);
+                // TODO: Use a proper QkParam rust alternative.
+                assert_eq!(&[FRAC_PI_2,], &[unsafe {qk_param_as_real(inst.params[0])}]);
             } else if idx == 1 {
                 assert_eq!(inst.name, "sx");
                 assert_eq!(&[0,], inst.qubits);
