@@ -10,7 +10,7 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-use qiskit_sys::{qk_circuit_gate, QkParam};
+use qiskit_sys::{QkParam, qk_circuit_gate};
 use std::collections::BTreeSet;
 use std::ffi::{CStr, CString};
 
@@ -602,9 +602,9 @@ impl<'a> Iterator for CircuitInstructions<'a> {
 
 #[cfg(test)]
 mod tests {
-    use qiskit_sys::qk_param_as_real;
     use super::QuantumCircuit;
     use crate::QiskitError;
+    use qiskit_sys::qk_param_as_real;
     use std::{f64::consts::FRAC_PI_2, u32};
 
     #[test]
@@ -625,7 +625,10 @@ mod tests {
                 assert_eq!(&[0,], inst.qubits);
                 assert_eq!(inst.clbits, &[]);
                 // TODO: Use a proper QkParam rust alternative.
-                assert_eq!(&[FRAC_PI_2,], &[unsafe {qk_param_as_real(inst.params[0])}]);
+                assert_eq!(
+                    &[FRAC_PI_2,],
+                    &[unsafe { qk_param_as_real(inst.params[0]) }]
+                );
             } else if idx == 1 {
                 assert_eq!(inst.name, "sx");
                 assert_eq!(&[0,], inst.qubits);
