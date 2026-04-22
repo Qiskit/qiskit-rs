@@ -605,7 +605,7 @@ mod tests {
     use super::QuantumCircuit;
     use crate::QiskitError;
     use qiskit_sys::qk_param_as_real;
-    use std::{f64::consts::FRAC_PI_2, u32};
+    use std::f64::consts::FRAC_PI_2;
 
     #[test]
     fn test_circuit_instructions() {
