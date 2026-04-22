@@ -94,11 +94,6 @@ fn clone_qiskit(source_path: &Path) {
 fn build_qiskit(source_path: &Path) {
     let _ = Command::new("make")
         .current_dir(source_path)
-        .env("CARGO_BUILD_TARGET", env::var("TARGET").unwrap())
-        .arg(format!(
-            "C_CARGO_TARGET_DIR=target/{}/release",
-            env::var("TARGET").unwrap()
-        ))
         .arg("c")
         .status()
         .expect("Dynamically linked library generation failed");
@@ -140,10 +135,8 @@ fn generate_bindings(qiskit_path_str: &str) {
 
     let bindings = bindgen::Builder::default()
         .header(format!("{}/dist/c/include/qiskit.h", qiskit_path_str))
-        .header(format!(
-            "{}/dist/c/include/qiskit/complex.h",
-            qiskit_path_str
-        ))
+        // Link the include folder directly to clang (this includes complex.h and others).
+        .clang_arg(format!("-I{}/dist/c/include/", qiskit_path_str))
         .parse_callbacks(Box::new(CargoCallbacks))
         .generate()
         .expect("Unable to generate bindings");
