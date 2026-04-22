@@ -816,7 +816,8 @@ impl TryFrom<u8> for BitTerm {
 
 pub struct BitTermList(Vec<BitTerm>);
 
-impl<'a> BitTermList {
+impl BitTermList {
+    /// Create a BitTermList
     pub fn new() -> BitTermList {
         BitTermList(Vec::new())
     }
@@ -831,7 +832,7 @@ impl<'a> BitTermList {
     }
 }
 
-impl<'a> FromIterator<BitTerm> for BitTermList {
+impl FromIterator<BitTerm> for BitTermList {
     fn from_iter<T: IntoIterator<Item = BitTerm>>(iter: T) -> Self {
         let mut bit_term_list = BitTermList::new();
 
