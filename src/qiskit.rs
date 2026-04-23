@@ -12,6 +12,7 @@
 use qiskit_sys::{QkParam, qk_circuit_gate};
 use std::collections::BTreeSet;
 use std::ffi::{CStr, CString};
+use std::fmt;
 
 #[derive(PartialEq, Eq, Debug)]
 /// The error enum that enumerates the different error types possible from Qiskit.
@@ -1027,23 +1028,10 @@ impl<'a> Observable {
     pub fn len(&self) -> usize {
         unsafe { qiskit_sys::qk_obs_len(self.observable) }
     }
-    /// Copy the observable
-    pub fn copy(&self) -> Observable {
-        Observable {
-            observable: unsafe { qiskit_sys::qk_obs_copy(self.observable) },
-        }
-    }
+
     /// Compare two observables for equality.
     pub fn equal(&self, obs: &Observable) -> bool {
         unsafe { qiskit_sys::qk_obs_equal(self.observable, obs.observable) }
-    }
-    /// Return a string representation of the observable
-    pub fn str(&self) -> String {
-        let obs_str = unsafe { qiskit_sys::qk_obs_str(self.observable) };
-        // Clone C string into String, which implements Drop
-        let retval = String::from(unsafe { CStr::from_ptr(obs_str) }.to_str().unwrap());
-        unsafe { qiskit_sys::qk_str_free(obs_str) };
-        retval
     }
     /// Apply a new qubit layout to the observable.
     ///
@@ -1059,7 +1047,7 @@ impl<'a> Observable {
     /// let identity = identity.apply_layout(&[10, 9, 8, 7]);
     /// ```
     pub fn apply_layout(&self, layout: &[u32]) -> Observable {
-        let new = self.copy();
+        let new = self.clone();
         let _ = unsafe {
             qiskit_sys::qk_obs_apply_layout(new.observable, layout.as_ptr(), layout.len() as u32)
         };
@@ -1077,9 +1065,38 @@ impl<'a> Observable {
     /// let canonical: Observable = identity.canonicalize(1e-6);
     /// ```
     pub fn canonicalize(&self, tolerance: f64) -> Observable {
-        let new = self.copy();
+        let new = self.clone();
         unsafe { qiskit_sys::qk_obs_canonicalize(new.observable, tolerance) };
         new
+    }
+}
+
+impl fmt::Display for Observable {
+    /// Return a string representation of the observable
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::Observable;
+    ///
+    /// let identity = Observable::identity(100);
+    /// println!("{}", identity);
+    /// ```
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let obs_str = unsafe { qiskit_sys::qk_obs_str(self.observable) };
+        // Clone C string into String, which implements Drop
+        let retval = String::from(unsafe { CStr::from_ptr(obs_str) }.to_str().unwrap());
+        unsafe { qiskit_sys::qk_str_free(obs_str) };
+        write!(f, "{}", retval)
+    }
+}
+
+impl Clone for Observable {
+    /// Copy the observable
+    fn clone(&self) -> Observable {
+        Observable {
+            observable: unsafe { qiskit_sys::qk_obs_copy(self.observable) },
+        }
     }
 }
 
@@ -1131,6 +1148,5 @@ mod observable_tests {
 
         let obs_b = Observable::new(num_qubits, &coeffs, &bits, &indices, &boundaries);
         assert!(obs.equal(&obs_b));
-        assert_eq!(obs.str(), obs_b.str());
     }
 }
