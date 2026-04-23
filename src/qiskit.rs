@@ -815,6 +815,7 @@ impl TryFrom<u8> for BitTerm {
     }
 }
 
+/// A list of BitTerms. BitTermList implements a custom iterator.
 pub struct BitTermList(Vec<BitTerm>);
 
 impl BitTermList {
@@ -822,12 +823,15 @@ impl BitTermList {
     pub fn new() -> BitTermList {
         BitTermList(Vec::new())
     }
+    /// Add a BitTerm to a BitTermList
     pub fn add(&mut self, elem: BitTerm) {
         self.0.push(elem);
     }
+    /// Get the length of a BitTermList
     pub fn len(self) -> usize {
         self.0.len()
     }
+    /// Convert a BitTermList to a slice
     pub fn as_slice(&self) -> &[BitTerm] {
         self.0.as_slice()
     }
