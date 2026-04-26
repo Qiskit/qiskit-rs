@@ -783,17 +783,27 @@ pub struct Observable {
 /// A complex, double-precision number representation.
 pub type Complex64 = qiskit_sys::QkComplex64;
 
+/// An enum that represents single qubit alphabet terms
 #[derive(Clone, Copy, PartialEq, Debug)]
 #[repr(u8)]
 pub enum BitTerm {
+    /// Pauli X operator
     X = qiskit_sys::QkBitTerm_QkBitTerm_X,
+    /// Pauli Y operator
     Y = qiskit_sys::QkBitTerm_QkBitTerm_Y,
+    /// Pauli Z operator
     Z = qiskit_sys::QkBitTerm_QkBitTerm_Z,
+    /// The projector ∣+⟩⟨+∣∣+⟩⟨+∣ to the positive X eigenstate
     Plus = qiskit_sys::QkBitTerm_QkBitTerm_Plus,
+    /// The projector ∣−⟩⟨−∣∣−⟩⟨−∣ to the negative X eigenstate
     Minus = qiskit_sys::QkBitTerm_QkBitTerm_Minus,
+    /// The projector ∣r⟩⟨r∣∣r⟩⟨r∣ to the positive Y eigenstate
     Right = qiskit_sys::QkBitTerm_QkBitTerm_Right,
+    /// The projector ∣l⟩⟨l∣∣l⟩⟨l∣ to the negative Y eigenstate
     Left = qiskit_sys::QkBitTerm_QkBitTerm_Left,
+    /// The projector ∣0⟩⟨0∣∣0⟩⟨0∣ to the positive Z eigenstate
     Zero = qiskit_sys::QkBitTerm_QkBitTerm_Zero,
+    /// The projector ∣1⟩⟨1∣∣1⟩⟨1∣ to the negative Z eigenstate
     One = qiskit_sys::QkBitTerm_QkBitTerm_One,
 }
 
