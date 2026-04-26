@@ -775,11 +775,6 @@ mod circuit_tests {
     }
 }
 
-/// An observable over Pauli bases that stores its data in a qubit-sparse format.
-pub struct Observable {
-    observable: *mut qiskit_sys::QkObs,
-}
-
 /// A complex, double-precision number representation.
 pub type Complex64 = qiskit_sys::QkComplex64;
 
@@ -859,7 +854,12 @@ impl FromIterator<BitTerm> for BitTermList {
     }
 }
 
-impl<'a> Observable {
+/// An observable over Pauli bases that stores its data in a qubit-sparse format.
+pub struct Observable {
+    observable: *mut qiskit_sys::QkObs,
+}
+
+impl Observable {
     /// Create a new observable
     ///
     /// # Example
