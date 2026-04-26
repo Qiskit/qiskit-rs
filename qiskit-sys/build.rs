@@ -17,6 +17,7 @@ use std::process::Command;
 enum InstallMethod {
     Clone,
     Path(String),
+    System,
 }
 
 #[derive(Debug)]
@@ -28,10 +29,12 @@ impl bindgen::callbacks::ParseCallbacks for CargoCallbacks {
     }
 }
 
-// There are two installation methods:
+// There are three installation methods:
 // - Clone (no path specified): Automatically clones and builds the qiskit c api from source
 //     Set envvar export QISKIT_CEXT_INSTALL_METHOD="clone" to use the clone method. WARNING, cloning and building from
 //     source is very slow.
+// - System
+//     Set envvar `export QISKIT_CEXT_INSTALL_METHOD="system"` to use a system-installed version of qiskit-c-api.
 // - Path (Manually specified path): Uses qiskit c api binary or source from a path
 //     export QISKIT_CEXT_INSTALL_METHOD="path"
 //     export QISKIT_CEXT_PATH="path/to/qiskit-cext-dir"
@@ -39,6 +42,7 @@ fn check_installation_method() -> InstallMethod {
     let qiskit_cext_path = env::var("QISKIT_CEXT_PATH");
     match env::var("QISKIT_CEXT_INSTALL_METHOD") {
         Ok(val) => match val.as_str() {
+            "system" => InstallMethod::System,
             "path" => InstallMethod::Path(qiskit_cext_path.expect("QISKIT_CEXT_PATH is unset")),
             "clone" => InstallMethod::Clone,
             _ => panic!(
@@ -117,10 +121,10 @@ fn build_qiskit_from_source() {
     build_qiskit(source_path);
 
     let repo_dir_str = source_path.to_str().unwrap();
-    generate_bindings(repo_dir_str);
+    generate_path_bindings(repo_dir_str);
 }
 
-fn generate_bindings(qiskit_path_str: &str) {
+fn generate_path_bindings(qiskit_path_str: &str) {
     let qiskit_path = Path::new(&qiskit_path_str);
 
     match qiskit_path.try_exists() {
@@ -148,6 +152,18 @@ fn generate_bindings(qiskit_path_str: &str) {
         .expect("Couldn't write bindings!");
 }
 
+fn generate_system_bindings() {
+    let bindings = bindgen::Builder::default()
+        .parse_callbacks(Box::new(CargoCallbacks))
+        .generate()
+        .expect("Unable to generate bindings");
+
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("bindings.rs"))
+        .expect("Couldn't write bindings!");
+}
+
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo::rerun-if-env-changed=QISKIT_CEXT_INSTALL_METHOD");
@@ -161,7 +177,10 @@ fn main() {
             build_qiskit_from_source();
         }
         InstallMethod::Path(path) => {
-            generate_bindings(&path);
+            generate_path_bindings(&path);
+        }
+        InstallMethod::System => {
+            generate_system_bindings();
         }
     };
 }

@@ -20,6 +20,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_version() {
+        use std::ffi::CStr;
+        let qiskit_c_api_version =
+            CStr::from_bytes_with_nul(QISKIT_VERSION).expect("Cannot parse QISKIT_C_API version");
+        let qiskit_c_api_version = qiskit_c_api_version
+            .to_str()
+            .expect("Cannot parse QISKIT_C_API version");
+        let qiskit_sys_version = env!("CARGO_PKG_VERSION");
+        assert_eq!(
+            qiskit_c_api_version, qiskit_sys_version,
+            "qiskit-c-api version ({}) does not match qiskit-sys version ({})",
+            qiskit_c_api_version, qiskit_sys_version
+        );
+    }
+
+    #[test]
     fn test_empty_circuit() {
         unsafe {
             let qc = qk_circuit_new(0, 0);
