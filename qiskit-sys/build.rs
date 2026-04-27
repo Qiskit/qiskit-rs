@@ -28,13 +28,6 @@ impl bindgen::callbacks::ParseCallbacks for CargoCallbacks {
     }
 }
 
-// There are two installation methods:
-// - Clone (no path specified): Automatically clones and builds the qiskit c api from source
-//     Set envvar export QISKIT_CEXT_INSTALL_METHOD="clone" to use the clone method. WARNING, cloning and building from
-//     source is very slow.
-// - Path (Manually specified path): Uses qiskit c api binary or source from a path
-//     export QISKIT_CEXT_INSTALL_METHOD="path"
-//     export QISKIT_CEXT_PATH="path/to/qiskit-cext-dir"
 fn check_installation_method() -> InstallMethod {
     let qiskit_cext_path = env::var("QISKIT_CEXT_PATH");
     match env::var("QISKIT_CEXT_INSTALL_METHOD") {
