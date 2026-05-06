@@ -71,6 +71,11 @@
 /// The main qiskit-rs module
 pub mod qiskit;
 
+/// Statevector-based quantum circuit sampler
+pub mod sampler;
+
 pub use qiskit::{
     BitTerm, ClassicalRegister, Complex64, Observable, QiskitError, QuantumCircuit, QuantumRegister,
 };
+
+pub use sampler::{SamplerResult, StatevectorSampler};
