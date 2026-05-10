@@ -32,6 +32,9 @@ pub enum QiskitError {
     /// Index out of bounds.
     IndexError,
 
+    /// Duplicate index.
+    DuplicateIndexError,
+
     /// Error related to arithmetic operations or similar.
     ArithmeticError,
 
@@ -55,6 +58,18 @@ pub enum QiskitError {
 
     /// Querying an operation that doesn't exist in the Target.
     TargetInvalidInstKey,
+
+    /// Transpilation failed
+    TranspilerError,
+
+    /// QkDag operation error
+    DagError,
+
+    /// The DAGs have mismatching qubit/clbit amounts during compose.
+    DagComposeMismatch,
+
+    /// One or more bit indices were not found during compose.
+    DagComposeMissingBit,
 }
 
 fn qk_to_qiskit_error(err: qiskit_sys::QkExitCode) -> QiskitError {
@@ -64,6 +79,7 @@ fn qk_to_qiskit_error(err: qiskit_sys::QkExitCode) -> QiskitError {
         qiskit_sys::QkExitCode_QkExitCode_NullPointerError => QiskitError::NullPointerError,
         qiskit_sys::QkExitCode_QkExitCode_AlignmentError => QiskitError::AlignmentError,
         qiskit_sys::QkExitCode_QkExitCode_IndexError => QiskitError::IndexError,
+        qiskit_sys::QkExitCode_QkExitCode_DuplicateIndexError => QiskitError::DuplicateIndexError,
         qiskit_sys::QkExitCode_QkExitCode_ArithmeticError => QiskitError::ArithmeticError,
         qiskit_sys::QkExitCode_QkExitCode_MismatchedQubits => QiskitError::MismatchedQubits,
         qiskit_sys::QkExitCode_QkExitCode_ExpectedUnitary => QiskitError::ExpectedUnitary,
@@ -76,6 +92,10 @@ fn qk_to_qiskit_error(err: qiskit_sys::QkExitCode) -> QiskitError {
             QiskitError::TargetInvalidQargsKey
         }
         qiskit_sys::QkExitCode_QkExitCode_TargetInvalidInstKey => QiskitError::TargetInvalidInstKey,
+        qiskit_sys::QkExitCode_QkExitCode_TranspilerError => QiskitError::TranspilerError,
+        qiskit_sys::QkExitCode_QkExitCode_DagError => QiskitError::DagError,
+        qiskit_sys::QkExitCode_QkExitCode_DagComposeMismatch => QiskitError::DagComposeMismatch,
+        qiskit_sys::QkExitCode_QkExitCode_DagComposeMissingBit => QiskitError::DagComposeMissingBit,
         _ => panic!("Invalid option for QiskitError"),
     }
 }
