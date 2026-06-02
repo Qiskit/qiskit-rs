@@ -68,11 +68,13 @@
 //! [Apache License 2.0](https://github.com/Qiskit/qiskit/blob/main/LICENSE.txt)
 
 #![warn(missing_docs)]
-/// The circuit module
+/// The circuit module.
 pub mod circuit;
 /// The main qiskit-rs module
 mod qiskit;
+/// The main module for quantum information tools.
+pub mod quantum_info;
 
 pub use circuit::{ClassicalRegister, QuantumCircuit, QuantumRegister};
-pub use qiskit::*;
-pub use qiskit::{BitTerm, Complex64, Observable, QiskitError};
+pub use qiskit::{Complex64, QiskitError};
+pub use quantum_info::{BitTerm, Observable};
