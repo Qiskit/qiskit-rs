@@ -25,7 +25,7 @@
 //! Create a simple bell state circuit in qiskit-rs
 //!
 //! ```
-//! use qiskit_rs::QuantumCircuit;
+//! use qiskit_rs::circuit::QuantumCircuit;
 //!
 //! // Initialize a circuit with 2 quantum registers and 2 classical registers
 //! let mut qc = QuantumCircuit::new(2, 2);
@@ -68,9 +68,13 @@
 //! [Apache License 2.0](https://github.com/Qiskit/qiskit/blob/main/LICENSE.txt)
 
 #![warn(missing_docs)]
+/// The circuit module.
+pub mod circuit;
 /// The main qiskit-rs module
-pub mod qiskit;
+mod qiskit;
+/// The main module for quantum information tools.
+pub mod quantum_info;
 
-pub use qiskit::{
-    BitTerm, ClassicalRegister, Complex64, Observable, QiskitError, QuantumCircuit, QuantumRegister,
-};
+pub use circuit::{ClassicalRegister, QuantumCircuit, QuantumRegister};
+pub use qiskit::{Complex64, QiskitError};
+pub use quantum_info::{BitTerm, Observable};
