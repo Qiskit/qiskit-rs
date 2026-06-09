@@ -12,3 +12,9 @@ Here's what the current model looks like:
 
 As it stands, it represents the C native ``QkCircuit`` struct which contains a list of instructions
 comprising the circuit instance. You may refer to the local documentation as to how to use it further.
+
+## `Registers
+
+For collections of quantum and classical bits we have the register structs:
+``QuantumRegister`` representing ``QkQuantumRegister`` and ``ClassicalRegister``
+representing ``QkClassicalRegister``.
