@@ -20,7 +20,7 @@ use super::registers::{ClassicalRegister, QuantumRegister};
 
 /// The core representation of a quantum circuit.
 pub struct QuantumCircuit {
-    circuit: *mut qiskit_sys::QkCircuit,
+    pub(crate) circuit: *mut qiskit_sys::QkCircuit,
 }
 
 impl QuantumCircuit {

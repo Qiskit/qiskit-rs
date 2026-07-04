@@ -11,7 +11,7 @@
 // that they have been altered from the originals.
 
 pub struct Target {
-    pub target: *mut qiskit_sys::QkTarget,
+    pub(crate) target: *mut qiskit_sys::QkTarget,
 }
 
 impl Target {

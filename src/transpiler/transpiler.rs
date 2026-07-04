@@ -37,7 +37,7 @@ pub fn transpile(
         qiskit_sys::qk_transpile(
             qc.circuit,
             target.target,
-            &options,
+            &options.options,
             &mut qk_transpile_result,
             error,
         )
