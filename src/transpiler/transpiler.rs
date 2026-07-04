@@ -21,7 +21,11 @@ pub struct Layout {
     pub layout: *mut qiskit_sys::QkTranspileLayout,
 }
 
-pub type TranspilerOptions = qiskit_sys::QkTranspileOptions;
+impl Drop for Layout {
+    fn drop(&mut self) {
+        unsafe { qiskit_sys::qk_transpile_layout_free(self.layout) };
+    }
+}
 
 pub fn transpile(
     qc: QuantumCircuit,

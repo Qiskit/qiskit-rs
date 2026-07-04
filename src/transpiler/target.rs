@@ -20,3 +20,9 @@ impl Target {
         Target { target: target }
     }
 }
+
+impl Drop for Target {
+    fn drop(&mut self) {
+        unsafe { qiskit_sys::qk_target_free(self.target) };
+    }
+}
