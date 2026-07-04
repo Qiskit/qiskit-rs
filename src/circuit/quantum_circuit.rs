@@ -50,7 +50,7 @@ impl QuantumCircuit {
     /// let mut qc = QuantumCircuit::new(10, 10);
     /// let n = qc.num_qubits();
     /// ```
-    pub fn num_qubits(&mut self) -> u32 {
+    pub fn num_qubits(&self) -> u32 {
         unsafe { qiskit_sys::qk_circuit_num_qubits(self.circuit) }
     }
     /// Return the number of classical bits in a QuantumCircuit.

@@ -12,10 +12,10 @@
 
 use std::ffi::CStr;
 
-use qiskit_sys::QkTranspileResult;
+use qiskit_sys::{QkTranspileResult, qk_transpiler_default_options};
 
 use crate::QuantumCircuit;
-use crate::Target;
+use crate::transpiler::Target;
 
 pub struct Layout {
     pub layout: *mut qiskit_sys::QkTranspileLayout,
@@ -27,6 +27,48 @@ impl Drop for Layout {
     }
 }
 
+/// Specify options for the transpiler function
+pub struct TranspilerOptions {
+    options: qiskit_sys::QkTranspileOptions,
+}
+
+impl TranspilerOptions {
+    /// Use default transpiler options
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use qiskit_rs::{QuantumCircuit};
+    /// use qiskit_rs::transpiler::{transpile, TranspilerOptions, Target};
+    ///
+    /// let qc = QuantumCircuit::new(2, 2);
+    /// let options = TranspilerOptions::default();
+    /// let target = Target::new(2);
+    /// transpile(qc, target, options);
+    /// ```
+    pub fn default() -> TranspilerOptions {
+        TranspilerOptions {
+            options: unsafe { qk_transpiler_default_options() },
+        }
+    }
+}
+
+/// Transpile a single circuit.
+///
+/// The Qiskit transpiler is a quantum circuit compiler that rewrites a given input
+/// circuit to match the constraints of a QPU and optimizes the circuit for execution.
+///
+/// # Example
+///
+/// ```
+/// use qiskit_rs::{QuantumCircuit};
+/// use qiskit_rs::transpiler::{transpile, TranspilerOptions, Target};
+///
+/// let qc = QuantumCircuit::new(2, 2);
+/// let options = TranspilerOptions::default();
+/// let target = Target::new(2);
+/// transpile(qc, target, options);
+/// ```
 pub fn transpile(
     qc: QuantumCircuit,
     target: Target,

@@ -10,6 +10,7 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
+/// A mapping of instructions and properties representing the particular constraints of a backend.
 pub struct Target {
     pub(crate) target: *mut qiskit_sys::QkTarget,
 }

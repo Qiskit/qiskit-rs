@@ -10,17 +10,14 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-use qiskit_rs::{QuantumCircuit, Target, transpile, transpiler::TranspilerOptions};
+use qiskit_rs::QuantumCircuit;
+use qiskit_rs::transpiler::{Target, TranspilerOptions, transpile};
 
 #[test]
 fn test_transpile() {
     let qc = QuantumCircuit::new(2, 2);
-    let options = TranspilerOptions {
-        optimization_level: 0,
-        seed: 0,
-        approximation_degree: 0.0,
-    };
+    let options = TranspilerOptions::default();
     let target = Target::new(2);
-    let (isa_circuit, layout) = transpile(qc, target, options);
+    let (isa_circuit, _) = transpile(qc, target, options);
     assert_eq!(isa_circuit.num_qubits(), 2);
 }
