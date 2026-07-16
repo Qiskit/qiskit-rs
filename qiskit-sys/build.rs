@@ -55,12 +55,26 @@ fn check_installation_method() -> InstallMethod {
     }
 }
 
-fn build_qiskit(source_path: &Path) {
-    let _ = Command::new("make")
+fn build_qiskit(source_path: &Path, new_path: &Path) {
+    Command::new("make")
         .current_dir(source_path)
         .arg("c")
         .status()
         .expect("Dynamically linked library generation failed");
+
+    let new_to_dist = new_path.join("dist");
+
+    Command::new("cp")
+        .current_dir(source_path)
+        .args([
+            "-r",
+            "./dist",
+            new_to_dist
+                .to_str()
+                .expect("Path should be convertible to string"),
+        ])
+        .status()
+        .expect("Source path for c files should exist");
 }
 
 fn build_qiskit_from_source() {
@@ -76,8 +90,12 @@ fn build_qiskit_from_source() {
         Err(e) => panic!("{e:?}"),
     }
 
-    build_qiskit(source_path);
-    let repo_dir_str = source_path.to_str().unwrap();
+    // Path to which we will copy the generated c files.
+    let new_path = std::env::var("OUT_DIR").expect("OUT_DIR env variable should have been set.");
+    let new_path = Path::new(&new_path);
+
+    build_qiskit(source_path, &new_path);
+    let repo_dir_str = new_path.to_str().unwrap();
     generate_bindings(repo_dir_str);
 }
 
