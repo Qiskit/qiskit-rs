@@ -55,42 +55,6 @@ fn check_installation_method() -> InstallMethod {
     }
 }
 
-fn clone_qiskit(source_path: &Path) {
-    let url = "https://github.com/Qiskit/qiskit.git";
-    match git2::Repository::clone(url, source_path) {
-        Ok(repo) => {
-            println!("Repository successfully cloned");
-            let refname = env!("CARGO_PKG_VERSION");
-            if !refname.contains("dev") {
-                let (obj, _) = repo
-                    .revparse_ext(refname)
-                    .unwrap_or_else(|_| panic!("{} not found in repo", refname));
-                repo.checkout_tree(&obj, None)
-                    .unwrap_or_else(|_| panic!("failed to checkout {}", refname));
-            }
-        }
-        Err(e) => match e.code() {
-            git2::ErrorCode::Exists => {
-                println!("Repository already exists");
-                let refname = env!("CARGO_PKG_VERSION");
-                if !refname.contains("dev") {
-                    let repo = git2::Repository::open(source_path)
-                        .unwrap_or_else(|_| panic!("Invalid repo at {:?}", source_path));
-                    let (obj, _) = repo
-                        .revparse_ext(refname)
-                        .unwrap_or_else(|_| panic!("{} not found in repo", refname));
-                    // Reset the repository in case of any untracked changes
-                    repo.reset(&obj, git2::ResetType::Soft, None)
-                        .expect("Error resetting repository.");
-                    repo.checkout_tree(&obj, None)
-                        .unwrap_or_else(|_| panic!("failed to checkout {}", refname));
-                }
-            }
-            _ => panic!("Git clone failed: {e:?}"),
-        },
-    }
-}
-
 fn build_qiskit(source_path: &Path) {
     let _ = Command::new("make")
         .current_dir(source_path)
@@ -100,11 +64,9 @@ fn build_qiskit(source_path: &Path) {
 }
 
 fn build_qiskit_from_source() {
-    let out_dir = std::env::var("OUT_DIR").unwrap();
-    let source_path = Path::new(&out_dir).join("qiskit_c_lib");
+    let out_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let source_path = Path::new(&out_dir).join("qiskit");
     let source_path = source_path.as_path();
-
-    clone_qiskit(source_path);
 
     match source_path.try_exists() {
         Ok(b) => match b {
