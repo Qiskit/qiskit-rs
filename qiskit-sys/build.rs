@@ -64,11 +64,15 @@ fn build_qiskit(source_path: &Path, new_path: &Path) {
 
     let new_to_dist = new_path.join("dist");
 
+    // We must copy the generated dynamic library and header files
+    // to our output folder so it is automatically included in the
+    // rpath and cargo is able to correctly link to the dynamic
+    // library and the header files.
     Command::new("cp")
-        .current_dir(source_path)
+        .current_dir(source_path.join("dist"))
         .args([
             "-r",
-            "./dist",
+            ".",
             new_to_dist
                 .to_str()
                 .expect("Path should be convertible to string"),
@@ -94,7 +98,7 @@ fn build_qiskit_from_source() {
     let new_path = std::env::var("OUT_DIR").expect("OUT_DIR env variable should have been set.");
     let new_path = Path::new(&new_path);
 
-    build_qiskit(source_path, &new_path);
+    build_qiskit(source_path, new_path);
     let repo_dir_str = new_path.to_str().unwrap();
     generate_bindings(repo_dir_str);
 }
