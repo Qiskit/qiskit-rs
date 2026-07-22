@@ -131,16 +131,64 @@ fn generate_bindings(qiskit_path_str: &str) {
         .expect("Couldn't write bindings!");
 }
 
+/// Ensures that the version of Qiskit being checked out matches the
+/// package version of ``qiskit-sys``.
+fn check_or_update_submodule() -> Result<(), git2::Error> {
+    let main_repo = git2::Repository::open_from_env()?;
+
+    println!("{:?}", main_repo.commondir());
+
+    let mut submodule = main_repo.find_submodule("qiskit")?;
+
+    // Check if the repository is initialized and update it if not before checking out
+    let repo = if let Ok(repo) = submodule.open() {
+        repo
+    } else {
+        submodule.update(true, None).expect("WHAT?");
+        submodule.open()?
+    };
+
+    let current_commit = repo.head()?;
+
+    let tag_string: String = env!("CARGO_PKG_VERSION").into();
+    let tag_parse: Vec<&str> = tag_string.split('.').collect();
+    println!("cargo::warning={:?}", tag_parse);
+
+    // If current version is called "dev" assume that the developer will use
+    // the previous available version.
+    if !tag_string.contains("dev") {
+        let (tag, Some(reference)) = repo.revparse_ext(&tag_string)? else {
+            return Err(git2::Error::from_str(&format!(
+                "Could not find tag referring to {}",
+                tag_string
+            )));
+        };
+
+        let ref_as_commit = reference.peel_to_commit()?;
+        let curr_as_commit = current_commit.peel_to_commit()?;
+        if ref_as_commit.id() != curr_as_commit.id() {
+            println!(
+                "cargo::warning=Current commit '{:?}' does not reference the package associated tag '{}'. The submodule will now checkout the correct tag.",
+                curr_as_commit.id(),
+                tag.as_tag().unwrap().name().unwrap()
+            );
+            repo.reset(ref_as_commit.as_object(), git2::ResetType::Hard, None)?;
+        }
+    }
+
+    Ok(())
+}
+
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo::rerun-if-env-changed=QISKIT_CEXT_INSTALL_METHOD");
     println!("cargo::rerun-if-env-changed=QISKIT_CEXT_PATH");
-
     let install_method = check_installation_method();
 
     match install_method {
         InstallMethod::Clone => {
             println!("cargo::warning=Cloning and building from source is very slow");
+            check_or_update_submodule().expect("Submodule doesn't exist");
             build_qiskit_from_source();
         }
         InstallMethod::Path(path) => {
