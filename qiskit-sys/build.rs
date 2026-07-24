@@ -55,56 +55,36 @@ fn check_installation_method() -> InstallMethod {
     }
 }
 
-fn clone_qiskit(source_path: &Path) {
-    let url = "https://github.com/Qiskit/qiskit.git";
-    match git2::Repository::clone(url, source_path) {
-        Ok(repo) => {
-            println!("Repository successfully cloned");
-            let refname = env!("CARGO_PKG_VERSION");
-            if !refname.contains("dev") {
-                let (obj, _) = repo
-                    .revparse_ext(refname)
-                    .unwrap_or_else(|_| panic!("{} not found in repo", refname));
-                repo.checkout_tree(&obj, None)
-                    .unwrap_or_else(|_| panic!("failed to checkout {}", refname));
-            }
-        }
-        Err(e) => match e.code() {
-            git2::ErrorCode::Exists => {
-                println!("Repository already exists");
-                let refname = env!("CARGO_PKG_VERSION");
-                if !refname.contains("dev") {
-                    let repo = git2::Repository::open(source_path)
-                        .unwrap_or_else(|_| panic!("Invalid repo at {:?}", source_path));
-                    let (obj, _) = repo
-                        .revparse_ext(refname)
-                        .unwrap_or_else(|_| panic!("{} not found in repo", refname));
-                    // Reset the repository in case of any untracked changes
-                    repo.reset(&obj, git2::ResetType::Soft, None)
-                        .expect("Error resetting repository.");
-                    repo.checkout_tree(&obj, None)
-                        .unwrap_or_else(|_| panic!("failed to checkout {}", refname));
-                }
-            }
-            _ => panic!("Git clone failed: {e:?}"),
-        },
-    }
-}
-
-fn build_qiskit(source_path: &Path) {
-    let _ = Command::new("make")
+fn build_qiskit(source_path: &Path, new_path: &Path) {
+    Command::new("make")
         .current_dir(source_path)
         .arg("c")
         .status()
         .expect("Dynamically linked library generation failed");
+
+    let new_to_dist = new_path.join("dist");
+
+    // We must copy the generated dynamic library and header files
+    // to our output folder so it is automatically included in the
+    // rpath and cargo is able to correctly link to the dynamic
+    // library and the header files.
+    Command::new("cp")
+        .current_dir(source_path.join("dist"))
+        .args([
+            "-r",
+            ".",
+            new_to_dist
+                .to_str()
+                .expect("Path should be convertible to string"),
+        ])
+        .status()
+        .expect("Source path for c files should exist");
 }
 
 fn build_qiskit_from_source() {
-    let out_dir = std::env::var("OUT_DIR").unwrap();
-    let source_path = Path::new(&out_dir).join("qiskit_c_lib");
+    let out_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let source_path = Path::new(&out_dir).join("qiskit");
     let source_path = source_path.as_path();
-
-    clone_qiskit(source_path);
 
     match source_path.try_exists() {
         Ok(b) => match b {
@@ -114,8 +94,12 @@ fn build_qiskit_from_source() {
         Err(e) => panic!("{e:?}"),
     }
 
-    build_qiskit(source_path);
-    let repo_dir_str = source_path.to_str().unwrap();
+    // Path to which we will copy the generated c files.
+    let new_path = std::env::var("OUT_DIR").expect("OUT_DIR env variable should have been set.");
+    let new_path = Path::new(&new_path);
+
+    build_qiskit(source_path, new_path);
+    let repo_dir_str = new_path.to_str().unwrap();
     generate_bindings(repo_dir_str);
 }
 
