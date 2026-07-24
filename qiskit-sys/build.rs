@@ -151,11 +151,8 @@ fn check_or_update_submodule() -> Result<(), git2::Error> {
     let current_commit = repo.head()?;
 
     let tag_string: String = env!("CARGO_PKG_VERSION").into();
-    let tag_parse: Vec<&str> = tag_string.split('.').collect();
-    println!("cargo::warning={:?}", tag_parse);
 
-    // If current version is called "dev" assume that the developer will use
-    // the previous available version.
+    // If current version is called "dev" do not update version in use.
     if !tag_string.contains("dev") {
         let (tag, Some(reference)) = repo.revparse_ext(&tag_string)? else {
             return Err(git2::Error::from_str(&format!(
@@ -174,6 +171,11 @@ fn check_or_update_submodule() -> Result<(), git2::Error> {
             );
             repo.reset(ref_as_commit.as_object(), git2::ResetType::Hard, None)?;
         }
+    } else {
+        println!(
+            "cargo::warning= The current version of qiskit-sys {:?} is in developer mode and may be prone to fail if the incorrect version of Qiskit is linked.",
+            tag_string
+        );
     }
 
     Ok(())
