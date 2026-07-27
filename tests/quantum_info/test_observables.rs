@@ -10,7 +10,8 @@
 // copyright notice, and modified files need to carry a notice indicating
 // that they have been altered from the originals.
 
-use crate::quantum_info::observable::BitTerm;
+use qiskit_rs::quantum_info::BitTerm;
+use qiskit_rs::{Complex64, Observable};
 
 #[test]
 fn test_new_observable() {
