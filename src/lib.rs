@@ -74,7 +74,10 @@ pub mod circuit;
 mod qiskit;
 /// The main module for quantum information tools.
 pub mod quantum_info;
+/// Quantum circuit transpiler module.
+pub mod transpiler;
 
 pub use circuit::{ClassicalRegister, QuantumCircuit, QuantumRegister};
 pub use qiskit::{Complex64, QiskitError};
 pub use quantum_info::{BitTerm, Observable};
+pub use transpiler::transpile;
