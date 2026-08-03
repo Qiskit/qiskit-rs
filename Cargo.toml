@@ -10,7 +10,7 @@ readme = "README.md"
 keywords = ["quantum", "qiskit"]
 
 [workspace]
-members = ["qiskit-sys"]
+members = ["qiskit-sys", "qiskit-sys-bindgen"]
 
 [workspace.package]
 edition = "2024"
