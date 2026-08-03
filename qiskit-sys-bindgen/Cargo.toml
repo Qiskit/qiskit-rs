@@ -7,3 +7,12 @@ authors.workspace = true
 license.workspace = true
 
 [dependencies]
+qiskit-bindgen.workspace = true
+pyo3 = {workspace = true, optional = true}
+cbindgen.workspace = true
+anyhow.workspace = true
+hashbrown.workspace = true
+qiskit-cext-vtable.workspace = true
+
+[features]
+python_binding = ["dep:pyo3"]
