@@ -12,9 +12,9 @@
 
 use std::ops::{Deref, DerefMut};
 
-use qiskit_bindgen::simple_ir;
 use anyhow::anyhow;
 use cbindgen::bindgen::ir;
+use qiskit_bindgen::simple_ir;
 
 pub const FN_MACRO: &str = "declare_fn";
 
@@ -108,12 +108,9 @@ impl Primitive {
         match self {
             #[cfg(feature = "python_binding")]
             Self::PyObject => None,
-            Self::Complex64
-            | Self::Void
-            | Self::Bool
-            | Self::F32
-            | Self::F64
-            | Self::Char32 => None,
+            Self::Complex64 | Self::Void | Self::Bool | Self::F32 | Self::F64 | Self::Char32 => {
+                None
+            }
             Self::Char | Self::SChar | Self::UChar => Some(Self::UChar),
             Self::I8 | Self::U8 => Some(Self::U8),
             Self::I16 | Self::U16 => Some(Self::U16),
@@ -173,9 +170,9 @@ impl Primitive {
 
 mod parse {
     use super::Primitive;
-    use qiskit_bindgen::simple_ir::{self, PtrKind, TypeKind};
     use anyhow::bail;
     use cbindgen::bindgen::ir;
+    use qiskit_bindgen::simple_ir::{self, PtrKind, TypeKind};
 
     pub fn r#type(mut ty: &ir::Type) -> anyhow::Result<simple_ir::Type<Primitive>> {
         let mut ptrs = Vec::new();
@@ -302,9 +299,9 @@ mod parse {
 
 mod export {
     use super::{FN_MACRO, Primitive};
-    use qiskit_bindgen::simple_ir::{self, PtrKind, TypeKind};
     use anyhow::anyhow;
     use hashbrown::HashMap;
+    use qiskit_bindgen::simple_ir::{self, PtrKind, TypeKind};
 
     fn render_type(ty: &simple_ir::Type<Primitive>, out: &mut String) {
         for ptr in ty.ptrs.iter().rev() {
@@ -428,7 +425,11 @@ pub union {name} {{"
         items: &simple_ir::Items<Primitive>,
         mut out: impl std::io::Write,
     ) -> anyhow::Result<()> {
-        writeln!(out, "{}", qiskit_bindgen::copyright_with_line_comments("//"))?;
+        writeln!(
+            out,
+            "{}",
+            qiskit_bindgen::copyright_with_line_comments("//")
+        )?;
         writeln!(
             out,
             "\

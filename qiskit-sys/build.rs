@@ -83,7 +83,10 @@ fn build_qiskit(source_path: &Path, new_path: &Path) {
 
 fn build_qiskit_from_source() {
     let out_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let source_path = Path::new(&out_dir).parent().expect("no parent directory").join("qiskit-sys-bindgen/qiskit");
+    let source_path = Path::new(&out_dir)
+        .parent()
+        .expect("no parent directory")
+        .join("qiskit-sys-bindgen/qiskit");
     let source_path = source_path.as_path();
 
     match source_path.try_exists() {

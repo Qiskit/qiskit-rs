@@ -10,7 +10,7 @@ readme = "README.md"
 keywords = ["quantum", "qiskit"]
 
 [workspace]
-members = ["qiskit-sys", "qiskit-sys-bindgen"]
+members = ["qiskit-sys", "qiskit-sys-bindgen", "qiskit-sys-pyo3"]
 
 [workspace.package]
 edition = "2024"
@@ -68,6 +68,8 @@ qiskit-quantum-info = { path = "qiskit-sys-bindgen/qiskit/crates/quantum_info" }
 qiskit-transpiler = { path = "qiskit-sys-bindgen/qiskit/crates/transpiler" }
 qiskit-util = { path = "qiskit-sys-bindgen/qiskit/crates/util" }
 qiskit-synthesis = { path = "qiskit-sys-bindgen/qiskit/crates/synthesis" }
+
+qiskit-sys-bindgen = { path = "qiskit-sys-bindgen" }
 
 [lib]
 name = "qiskit_rs"
