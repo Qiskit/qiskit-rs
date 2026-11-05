@@ -8,3 +8,4 @@ license.workspace = true
 
 [dependencies]
 anyhow = "1.0.104"
+toml_edit = "0.25.18"
