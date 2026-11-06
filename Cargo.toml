@@ -11,6 +11,7 @@ keywords = ["quantum", "qiskit"]
 
 [workspace]
 members = ["qiskit-sys", "xtask"]
+exclude = ["qiskit-pyo3-ffi-tests"]
 
 [workspace.package]
 edition = "2024"

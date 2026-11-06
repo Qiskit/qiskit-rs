@@ -1,0 +1,15 @@
+[package]
+name = "qiskit-pyo3-ffi-tests"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Keep this out of the qiskit-rs workspace since qiskit-pyo3-ffi is 
+# only generated on demand
+[workspace]
+
+[dev-dependencies]
+qiskit-pyo3-ffi = { path = "../qiskit-pyo3-ffi" }
+# We execute this crate standalone so PyO3 needs to initialize a Python interpreter
+# whenever we call Python::attach
+pyo3 = { version = "0.28", features = ["auto-initialize"] }
