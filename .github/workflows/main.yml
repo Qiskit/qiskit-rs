@@ -27,6 +27,16 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - uses: actions/setup-python@v7
+      with:
+        python-version: "3.13"
+    - name: Build qiskit-pyo3-ffi
+      run: cargo xtask generate-pyo3
+    - name: Install Qiskit and run qiskit-pyo3-ffi tests
+      run: |
+        qiskit_version=$(python -c "import tomllib; print(tomllib.load(open('qiskit/Cargo.toml','rb'))['workspace']['package']['version'])")
+        pip install qiskit==$qiskit_version
+        cargo test --manifest-path qiskit-pyo3-ffi-tests/Cargo.toml
     - name: Build docs
       run: cargo doc --all-features --workspace
     - name: upload docs build
