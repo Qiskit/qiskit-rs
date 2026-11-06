@@ -98,6 +98,7 @@ impl Primitive {
             Self::ULongLong => valid_type!(::std::ffi::c_ulonglong),
             #[cfg(feature = "python_binding")]
             // Can't use `valid_type!` on these because we don't depend on these crates here.
+            #[cfg(feature = "python_binding")]
             Self::PyObject => "::pyo3::ffi::PyObject",
             Self::Complex64 => "::num_complex::Complex64",
         }
@@ -299,7 +300,9 @@ mod parse {
 
 mod export {
     use super::{FN_MACRO, Primitive};
+    #[cfg(feature = "python_binding")]
     use anyhow::anyhow;
+    #[cfg(feature = "python_binding")]
     use hashbrown::HashMap;
     use qiskit_bindgen::simple_ir::{self, PtrKind, TypeKind};
 
@@ -337,6 +340,7 @@ pub enum {name} {{
         out
     }
 
+    #[cfg(feature = "python_binding")]
     fn function(
         val: &simple_ir::Function<Primitive>,
         macro_name: &str,
@@ -449,11 +453,13 @@ use crate::{FN_MACRO};"
             writeln!(out, "{}", r#union(item))?;
         }
         writeln!(out)?;
+        #[cfg(feature = "python_binding")]
         let functions = items
             .functions
             .iter()
             .map(|func| (func.name.clone(), func))
             .collect::<HashMap<_, _>>();
+        #[cfg(feature = "python_binding")]
         let capsules = [
             (
                 "crate::QK_FFI_CIRCUIT",
@@ -465,6 +471,7 @@ use crate::{FN_MACRO};"
             ),
             ("crate::QK_FFI_QI", &qiskit_cext_vtable::FUNCTIONS_QI),
         ];
+        #[cfg(feature = "python_binding")]
         for (vtable_name, vtable) in capsules {
             for entry in vtable.exports(0) {
                 let item = functions

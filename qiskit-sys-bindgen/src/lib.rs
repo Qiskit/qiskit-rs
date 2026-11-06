@@ -12,11 +12,13 @@
 pub mod render;
 
 pub use qiskit_bindgen::generate_bindings;
+#[cfg(feature = "python_binding")]
 use std::{
     fs,
     path::{Path, PathBuf},
 };
 
+#[cfg(feature = "python_binding")]
 fn rust_pyo3_ffi_root() -> PathBuf {
     let path: PathBuf = [env!("CARGO_MANIFEST_DIR"), "src", "pyo3-ffi"]
         .iter()
@@ -25,6 +27,7 @@ fn rust_pyo3_ffi_root() -> PathBuf {
     path
 }
 
+#[cfg(feature = "python_binding")]
 fn rust_pyo3_ffi_files() -> anyhow::Result<Vec<PathBuf>> {
     let root = rust_pyo3_ffi_root();
     // let output = Command::new("cargo")
@@ -60,6 +63,7 @@ fn rust_pyo3_ffi_files() -> anyhow::Result<Vec<PathBuf>> {
     Ok(out)
 }
 
+#[cfg(feature = "python_binding")]
 pub fn install_rust_pyo3_ffi(
     bindings: &cbindgen::Bindings,
     install_path: impl AsRef<Path>,
@@ -76,12 +80,15 @@ pub fn install_rust_pyo3_ffi(
         if let Some(parent) = file.parent() {
             fs::create_dir_all(install_path.join(parent))?;
         }
-        fs::copy(crate_root.join(&file), install_path.join(&file))?;
         println!(
             "cargo:warning=Copying file: {:?} to {:?}",
             file,
-            install_path.join(&file)
+            install_path.join(&file.file_name().expect("File should have a name"))
         );
+        fs::copy(
+            crate_root.join(&file),
+            install_path.join(&file.file_name().expect("File should have a name")),
+        )?;
     }
 
     // ... and then overwrite the generated file.
@@ -89,6 +96,7 @@ pub fn install_rust_pyo3_ffi(
     Ok(())
 }
 
+#[cfg(feature = "python_binding")]
 pub fn generate_and_install_rust_pyo3_ffi(install_path: impl AsRef<Path>) -> anyhow::Result<()> {
     let cext_path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("qiskit")

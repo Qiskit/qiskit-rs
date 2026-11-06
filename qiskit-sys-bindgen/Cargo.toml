@@ -8,11 +8,11 @@ license.workspace = true
 
 [dependencies]
 qiskit-bindgen.workspace = true
-pyo3 = {workspace = true, optional = true}
+pyo3 = {workspace = true, optional = true, features =["auto-initialize"]}
 cbindgen.workspace = true
 anyhow.workspace = true
 hashbrown.workspace = true
-qiskit-cext-vtable.workspace = true
+qiskit-cext-vtable = {workspace = true, optional = true}
 
 [features]
-python_binding = ["dep:pyo3"]
+python_binding = ["dep:pyo3", "dep:qiskit-cext-vtable", "qiskit-cext-vtable/python_binding"]
