@@ -1,3 +1,4 @@
 [submodule "qiskit"]
 	path = qiskit
-	url = https://github.com/Qiskit/qiskit.git
+        url = https://github.com/Qiskit/qiskit.git
+        ignore = dirty
