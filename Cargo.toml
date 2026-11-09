@@ -20,17 +20,18 @@ license = "Apache-2.0"
 version = "0.0.0"
 
 [workspace.dependencies]
-bytemuck = "1.25"
+bytemuck = { version = "1.25", features = ["extern_crate_alloc", "impl_core_error"] }
 bitfield-struct = "0.13.0"
 indexmap.version = "2.10.0"
 hashbrown.version = "0.15.5"
 num-bigint = "0.4"
-num-complex = "0.4"
+num-complex = { version = "0.4", features = ["bytemuck"] }
 nalgebra = "0.35"
 faer = "0.24"
 numpy = "0.29"
 ndarray = "0.17"
 smallvec = "1.15"
+stacker = "0.1"
 thiserror = "2.0"
 rustworkx-core = "0.18"
 fixedbitset = "0.5.7"
@@ -45,12 +46,16 @@ rand = "0.10"
 rand_pcg = "0.10"
 rand_distr = "0.6"
 num-traits = "0.2"
-uuid = { version = "1.23", features = ["v4", "fast-rng"], default-features = false }
+uuid = { version = "1.23", features = [
+    "v4",
+    "fast-rng",
+], default-features = false }
 anyhow = "1.0"
 binrw = "0.15"
 cbindgen = "0.29.4"
 mimalloc = "0.1.52"
-npyz = {version = "0.9.1", features = ["complex"]}
+npyz = { version = "0.9.1", features = ["complex"] }
+tempfile = "3.0"
 
 # Most of the crates don't need the feature `extension-module`, since only `qiskit-pyext` builds an
 # actual C extension (the feature disables linking in `libpython`, which is forbidden in Python
@@ -68,6 +73,8 @@ qiskit-quantum-info = { path = "qiskit-sys-bindgen/qiskit/crates/quantum_info" }
 qiskit-transpiler = { path = "qiskit-sys-bindgen/qiskit/crates/transpiler" }
 qiskit-util = { path = "qiskit-sys-bindgen/qiskit/crates/util" }
 qiskit-synthesis = { path = "qiskit-sys-bindgen/qiskit/crates/synthesis" }
+qiskit-passmanager = { path = "qiskit-sys-bindgen/qiskit/crates/passmanager" }
+qiskit-qpy = { path = "qiskit-sys-bindgen/qiskit/crates/qpy" }
 
 qiskit-sys-bindgen = { path = "qiskit-sys-bindgen" }
 

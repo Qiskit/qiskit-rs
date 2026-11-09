@@ -35,11 +35,18 @@ pub enum QkExitCode {
     TargetInvalidQargsKey = 303,
     TargetInvalidInstKey = 304,
     TranspilerError = 400,
+    IncompatibleTypes = 401,
+    CastingError = 402,
     DagError = 500,
     DagComposeMismatch = 501,
     DagComposeMissingBit = 502,
     ParameterError = 600,
     ParameterNameConflict = 601,
+    QpyError = 700,
+    CircuitError = 800,
+    IncorrectDelayUnit = 801,
+    CustomOperation = 900,
+    CustomOperationRepeatedSlot = 901,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -122,6 +129,9 @@ pub enum QkDelayUnit {
     US = 2,
     NS = 3,
     PS = 4,
+    DT = 5,
+    EXPR = 6,
+    Unknown = 7,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -137,6 +147,17 @@ pub enum QkVarsMode {
 pub enum QkBlocksMode {
     Drop = 0,
     Keep = 1,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(u8)]
+pub enum QkEntanglementStrategy {
+    Full = 0,
+    Linear = 1,
+    ReverseLinear = 2,
+    Circular = 3,
+    Pairwise = 4,
+    Sca = 5,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -265,6 +286,15 @@ pub enum QkDagNodeType {
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 #[repr(u8)]
+pub enum QkParamKind {
+    Unknown = 0,
+    Real = 1,
+    ParameterExpression = 2,
+    Int = 3,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(u8)]
 pub enum QkBitTerm {
     X = 2,
     Plus = 10,
@@ -277,8 +307,55 @@ pub enum QkBitTerm {
     One = 5,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(u32)]
+pub enum QkCustomOpSlot {
+    Name = 0,
+    NumQubits = 1,
+    NumClbits = 2,
+    NumParams = 3,
+    Directive = 4,
+    IsUnitary = 5,
+    NumCtrlQubits = 6,
+    Label = 7,
+    Definition = 8,
+    Eq = 9,
+    Clone = 10,
+    Delete = 11,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(u32)]
+pub enum QkIrBuiltin {
+    Circuit = 0,
+    Dag = 1,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(u32)]
+pub enum QkIrSlot {
+    Delete = 0,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(u32)]
+pub enum QkPassSlot {
+    RunOwned = 0,
+    Delete = 1,
+}
+
+#[repr(C)]
+pub struct QkCustomOp {
+    _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
+}
+
 #[repr(C)]
 pub struct QkControlFlowInstruction {
+    _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
+}
+
+#[repr(C)]
+pub struct QkPass {
     _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
 }
 
@@ -293,6 +370,16 @@ pub struct QkClassicalRegister {
 }
 
 #[repr(C)]
+pub struct QkCompilationError {
+    _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
+}
+
+#[repr(C)]
+pub struct QkCustomOpVtable {
+    _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
+}
+
+#[repr(C)]
 pub struct QkDag {
     _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
 }
@@ -303,7 +390,27 @@ pub struct QkExprNode {
 }
 
 #[repr(C)]
+pub struct QkIrHandle {
+    _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
+}
+
+#[repr(C)]
 pub struct QkParam {
+    _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
+}
+
+#[repr(C)]
+pub struct QkPassContext {
+    _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
+}
+
+#[repr(C)]
+pub struct QkPassManager {
+    _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
+}
+
+#[repr(C)]
+pub struct QkPassVtable {
     _private: ::core::marker::PhantomData<(*mut u8, ::core::marker::PhantomPinned)>,
 }
 
@@ -386,6 +493,18 @@ pub struct QkCircuitInstruction {
 }
 
 #[repr(C)]
+pub struct QkCircuitInstructionView {
+    pub name: *const ::std::ffi::c_char,
+    pub qubits: *const u32,
+    pub clbits: *const u32,
+    pub params: *const QkParam,
+    pub name_len: usize,
+    pub num_qubits: u32,
+    pub num_clbits: u32,
+    pub num_params: usize,
+}
+
+#[repr(C)]
 pub struct QkPauliProductRotation {
     pub z: *mut bool,
     pub x: *mut bool,
@@ -406,6 +525,16 @@ pub struct QkCircuitDrawerConfig {
     pub bundle_cregs: bool,
     pub merge_wires: bool,
     pub fold: usize,
+    pub barrier_label_len: usize,
+}
+
+#[repr(C)]
+pub struct QkNLocalSettings {
+    pub entanglement_strategy: QkEntanglementStrategy,
+    pub reps: usize,
+    pub parameter_prefix: *const ::std::ffi::c_char,
+    pub insert_barriers: bool,
+    pub skip_final_rotation_layer: bool,
 }
 
 #[repr(C)]
@@ -482,6 +611,19 @@ pub struct QkSwitchCaseLabels {
 pub struct QkDagNeighbors {
     pub neighbors: *const u32,
     pub num_neighbors: usize,
+}
+
+#[repr(C)]
+pub struct QkVtableEntry {
+    pub slot: u32,
+    pub flags: u32,
+    pub ptr: *mut ::std::ffi::c_void,
+}
+
+#[repr(C)]
+pub struct QkQpyLoadedCircuits {
+    pub data: *mut *mut QkCircuit,
+    pub len: usize,
 }
 
 #[repr(C)]
@@ -632,6 +774,10 @@ declare_fn!(crate::QK_FFI_CIRCUIT[90]; qk_control_flow_switch_is_case_default(cf
 declare_fn!(crate::QK_FFI_CIRCUIT[91]; qk_control_flow_switch_case_labels_bit_width(cf_inst: *const QkControlFlowInstruction, case_idx: usize) -> u64);
 declare_fn!(crate::QK_FFI_CIRCUIT[92]; qk_control_flow_switch_case_labels_uint(cf_inst: *const QkControlFlowInstruction, case_idx: usize) -> QkSwitchCaseLabels);
 declare_fn!(crate::QK_FFI_CIRCUIT[93]; qk_control_flow_switch_case_labels_clear(labels: *mut QkSwitchCaseLabels));
+declare_fn!(crate::QK_FFI_CIRCUIT[94]; qk_circuit_view_instruction(circuit: *const QkCircuit, index: usize, out: *mut QkCircuitInstructionView));
+declare_fn!(crate::QK_FFI_CIRCUIT[95]; qk_circuit_delay_dt(circuit: *mut QkCircuit, qubit: u32, duration: i64) -> QkExitCode);
+declare_fn!(crate::QK_FFI_CIRCUIT[96]; qk_circuit_delay_unit(circuit: *const QkCircuit, index: usize) -> QkDelayUnit);
+declare_fn!(crate::QK_FFI_CIRCUIT[97]; qk_circuit_custom_operation(circuit: *mut QkCircuit, operation: *mut QkCustomOp, qubits: *const u32, clbits: *const u32, params: *mut *mut QkParam) -> QkExitCode);
 declare_fn!(crate::QK_FFI_CIRCUIT[105]; qk_dag_new() -> *mut QkDag);
 declare_fn!(crate::QK_FFI_CIRCUIT[106]; qk_dag_add_quantum_register(dag: *mut QkDag, reg: *const QkQuantumRegister));
 declare_fn!(crate::QK_FFI_CIRCUIT[107]; qk_dag_add_classical_register(dag: *mut QkDag, reg: *const QkClassicalRegister));
@@ -674,6 +820,8 @@ declare_fn!(crate::QK_FFI_CIRCUIT[143]; qk_dag_replace_block_with_unitary(dag: *
 declare_fn!(crate::QK_FFI_CIRCUIT[144]; qk_dag_substitute_node_with_unitary(dag: *mut QkDag, node: u32, matrix: *const ::num_complex::Complex64, num_qubits: u32));
 declare_fn!(crate::QK_FFI_CIRCUIT[145]; qk_dag_global_phase(dag: *const QkDag) -> *mut QkParam);
 declare_fn!(crate::QK_FFI_CIRCUIT[146]; qk_dag_set_global_phase(dag: *mut QkDag, phase: *const QkParam) -> QkExitCode);
+declare_fn!(crate::QK_FFI_CIRCUIT[147]; qk_dag_view_instruction(dag: *const QkDag, index: u32, out: *mut QkCircuitInstructionView));
+declare_fn!(crate::QK_FFI_CIRCUIT[148]; qk_dag_apply_custom_operation(dag: *mut QkDag, operation: *mut QkCustomOp, qubits: *const u32, clbits: *const u32, params: *mut *mut QkParam, node: *mut u32, front: bool) -> QkExitCode);
 declare_fn!(crate::QK_FFI_CIRCUIT[205]; qk_param_new_symbol(name: *const ::std::ffi::c_char) -> *mut QkParam);
 declare_fn!(crate::QK_FFI_CIRCUIT[206]; qk_param_zero() -> *mut QkParam);
 declare_fn!(crate::QK_FFI_CIRCUIT[207]; qk_param_free(param: *mut QkParam));
@@ -700,12 +848,17 @@ declare_fn!(crate::QK_FFI_CIRCUIT[227]; qk_param_neg(out: *mut QkParam, src: *co
 declare_fn!(crate::QK_FFI_CIRCUIT[228]; qk_param_conjugate(out: *mut QkParam, src: *const QkParam) -> QkExitCode);
 declare_fn!(crate::QK_FFI_CIRCUIT[229]; qk_param_equal(lhs: *const QkParam, rhs: *const QkParam) -> bool);
 declare_fn!(crate::QK_FFI_CIRCUIT[230]; qk_param_as_real(param: *const QkParam) -> f64);
+declare_fn!(crate::QK_FFI_CIRCUIT[231]; qk_param_stride() -> usize);
+declare_fn!(crate::QK_FFI_CIRCUIT[232]; qk_param_as_int(param: *const QkParam, value: *mut i64) -> bool);
+declare_fn!(crate::QK_FFI_CIRCUIT[233]; qk_param_kind(param: *const QkParam) -> QkParamKind);
 declare_fn!(crate::QK_FFI_CIRCUIT[255]; qk_circuit_library_iqp(num_qubits: u32, interactions: *const i64, check_input: bool) -> *mut QkCircuit);
 declare_fn!(crate::QK_FFI_CIRCUIT[256]; qk_circuit_library_random_iqp(num_qubits: u32, seed: i64) -> *mut QkCircuit);
 declare_fn!(crate::QK_FFI_CIRCUIT[257]; qk_circuit_library_quantum_volume(num_qubits: u32, depth: usize, seed: i64) -> *mut QkCircuit);
 declare_fn!(crate::QK_FFI_CIRCUIT[258]; qk_circuit_library_suzuki_trotter(op: *const QkObs, order: u32, reps: u32, time: f64, preserve_order: bool, insert_barriers: bool) -> *mut QkCircuit);
 declare_fn!(crate::QK_FFI_CIRCUIT[259]; qk_pauli_product_rotation_clear(inst: *mut QkPauliProductRotation));
 declare_fn!(crate::QK_FFI_CIRCUIT[260]; qk_pauli_product_measurement_clear(inst: *mut QkPauliProductMeasurement));
+declare_fn!(crate::QK_FFI_CIRCUIT[261]; qk_circuit_library_n_local(num_qubits: u32, rotation_blocks: *const QkGate, rotation_blocks_size: usize, entanglement_blocks: *const QkGate, entanglement_blocks_size: usize, settings: *const QkNLocalSettings) -> *mut QkCircuit);
+declare_fn!(crate::QK_FFI_CIRCUIT[262]; qk_circuit_library_n_local_settings_default() -> QkNLocalSettings);
 declare_fn!(crate::QK_FFI_CIRCUIT[305]; qk_expr_kind(expr: *const QkExprNode) -> QkExprNodeKind);
 declare_fn!(crate::QK_FFI_CIRCUIT[306]; qk_expr_binary_info(expr: *const QkExprNode) -> QkBinaryExprInfo);
 declare_fn!(crate::QK_FFI_CIRCUIT[307]; qk_expr_unary_info(expr: *const QkExprNode) -> QkUnaryExprInfo);
@@ -722,6 +875,10 @@ declare_fn!(crate::QK_FFI_CIRCUIT[317]; qk_value_bool(value: *const QkValue) -> 
 declare_fn!(crate::QK_FFI_CIRCUIT[318]; qk_var_name(var: *const QkVar) -> *mut ::std::ffi::c_char);
 declare_fn!(crate::QK_FFI_CIRCUIT[319]; qk_var_type_info(var: *const QkVar) -> QkExprTypeInfo);
 declare_fn!(crate::QK_FFI_CIRCUIT[320]; qk_stretch_name(stretch: *const QkStretch) -> *mut ::std::ffi::c_char);
+declare_fn!(crate::QK_FFI_CIRCUIT[380]; qk_custom_operation_vtable_new(slots: *const QkVtableEntry) -> *const QkCustomOpVtable);
+declare_fn!(crate::QK_FFI_CIRCUIT[381]; qk_custom_operation_vtable_free(v_table: *const QkCustomOpVtable));
+declare_fn!(crate::QK_FFI_CIRCUIT[382]; qk_custom_operation_new(operation: *mut ::std::ffi::c_void, v_table: *const QkCustomOpVtable) -> *mut QkCustomOp);
+declare_fn!(crate::QK_FFI_CIRCUIT[383]; qk_custom_operation_free(data: *mut QkCustomOp));
 declare_fn!(crate::QK_FFI_TRANSPILE[0]; qk_transpile(qc: *const QkCircuit, target: *const QkTarget, options: *const QkTranspileOptions, result: *mut QkTranspileResult, error: *mut *mut ::std::ffi::c_char) -> QkExitCode);
 declare_fn!(crate::QK_FFI_TRANSPILE[1]; qk_transpiler_default_options() -> QkTranspileOptions);
 declare_fn!(crate::QK_FFI_TRANSPILE[2]; qk_transpile_stage_init(dag: *mut QkDag, target: *const QkTarget, options: *const QkTranspileOptions, state: *mut *mut QkTranspilerStageState, error: *mut *mut ::std::ffi::c_char) -> QkExitCode);
@@ -759,7 +916,7 @@ declare_fn!(crate::QK_FFI_TRANSPILE[161]; qk_target_set_acquire_alignment(target
 declare_fn!(crate::QK_FFI_TRANSPILE[162]; qk_target_copy(target: *mut QkTarget) -> *mut QkTarget);
 declare_fn!(crate::QK_FFI_TRANSPILE[163]; qk_target_free(target: *mut QkTarget));
 declare_fn!(crate::QK_FFI_TRANSPILE[164]; qk_target_add_instruction(target: *mut QkTarget, target_entry: *mut QkTargetEntry) -> QkExitCode);
-declare_fn!(crate::QK_FFI_TRANSPILE[165]; qk_target_update_property(target: *mut QkTarget, instruction: QkGate, qargs: *mut u32, num_qubits: u32, duration: f64, error: f64) -> QkExitCode);
+declare_fn!(crate::QK_FFI_TRANSPILE[165]; qk_target_update_property(target: *mut QkTarget, instruction: QkGate, qargs: *const u32, num_qubits: u32, duration: f64, error: f64) -> QkExitCode);
 declare_fn!(crate::QK_FFI_TRANSPILE[166]; qk_target_num_instructions(target: *const QkTarget) -> usize);
 declare_fn!(crate::QK_FFI_TRANSPILE[167]; qk_target_instruction_supported(target: *const QkTarget, operation_name: *const ::std::ffi::c_char, qargs: *const u32, params: *mut *mut QkParam) -> bool);
 declare_fn!(crate::QK_FFI_TRANSPILE[168]; qk_target_op_index(target: *const QkTarget, name: *const ::std::ffi::c_char) -> usize);
@@ -779,7 +936,7 @@ declare_fn!(crate::QK_FFI_TRANSPILE[202]; qk_target_entry_new_reset() -> *mut Qk
 declare_fn!(crate::QK_FFI_TRANSPILE[203]; qk_target_entry_new_fixed(operation: QkGate, params: *mut f64, name: *const ::std::ffi::c_char) -> *mut QkTargetEntry);
 declare_fn!(crate::QK_FFI_TRANSPILE[204]; qk_target_entry_num_properties(entry: *const QkTargetEntry) -> usize);
 declare_fn!(crate::QK_FFI_TRANSPILE[205]; qk_target_entry_free(entry: *mut QkTargetEntry));
-declare_fn!(crate::QK_FFI_TRANSPILE[206]; qk_target_entry_add_property(entry: *mut QkTargetEntry, qargs: *mut u32, num_qubits: u32, duration: f64, error: f64) -> QkExitCode);
+declare_fn!(crate::QK_FFI_TRANSPILE[206]; qk_target_entry_add_property(entry: *mut QkTargetEntry, qargs: *const u32, num_qubits: u32, duration: f64, error: f64) -> QkExitCode);
 declare_fn!(crate::QK_FFI_TRANSPILE[207]; qk_target_entry_set_name(entry: *mut QkTargetEntry, name: *const ::std::ffi::c_char) -> QkExitCode);
 declare_fn!(crate::QK_FFI_TRANSPILE[250]; qk_transpiler_pass_elide_permutations(dag: *mut QkDag) -> *mut QkTranspileLayout);
 declare_fn!(crate::QK_FFI_TRANSPILE[251]; qk_transpiler_pass_check_gate_direction(dag: *const QkDag, target: *const QkTarget) -> bool);
@@ -819,6 +976,20 @@ declare_fn!(crate::QK_FFI_TRANSPILE[462]; qk_vf2_layout_configuration_set_time_l
 declare_fn!(crate::QK_FFI_TRANSPILE[463]; qk_vf2_layout_configuration_set_max_trials(config: *mut QkVF2LayoutConfiguration, limit: u64));
 declare_fn!(crate::QK_FFI_TRANSPILE[464]; qk_vf2_layout_configuration_set_shuffle_seed(config: *mut QkVF2LayoutConfiguration, seed: u64));
 declare_fn!(crate::QK_FFI_TRANSPILE[465]; qk_vf2_layout_configuration_set_score_initial(config: *mut QkVF2LayoutConfiguration, score_initial: bool));
+declare_fn!(crate::QK_FFI_TRANSPILE[550]; qk_ir_handle_new(name: *const ::std::ffi::c_char, table: *const QkVtableEntry) -> *mut QkIrHandle);
+declare_fn!(crate::QK_FFI_TRANSPILE[551]; qk_ir_handle_builtin(ty: u32) -> *mut QkIrHandle);
+declare_fn!(crate::QK_FFI_TRANSPILE[552]; qk_ir_handle_free(handle: *mut QkIrHandle));
+declare_fn!(crate::QK_FFI_TRANSPILE[570]; qk_pass_vtable_new(name: *const ::std::ffi::c_char, ir_in: *const QkIrHandle, ir_out: *const QkIrHandle, table: *const QkVtableEntry) -> *mut QkPassVtable);
+declare_fn!(crate::QK_FFI_TRANSPILE[571]; qk_pass_vtable_free(vtable: *mut QkPassVtable));
+declare_fn!(crate::QK_FFI_TRANSPILE[572]; qk_pass_new(data: *mut ::std::ffi::c_void, vtable: *const QkPassVtable) -> *mut QkPass);
+declare_fn!(crate::QK_FFI_TRANSPILE[573]; qk_pass_free(pass: *mut QkPass));
+declare_fn!(crate::QK_FFI_TRANSPILE[590]; qk_compilation_error_new(msg: *const ::std::ffi::c_char) -> *mut QkCompilationError);
+declare_fn!(crate::QK_FFI_TRANSPILE[591]; qk_compilation_error_free(error: *mut QkCompilationError));
+declare_fn!(crate::QK_FFI_TRANSPILE[592]; qk_compilation_error_str(error: *const QkCompilationError) -> *mut ::std::ffi::c_char);
+declare_fn!(crate::QK_FFI_TRANSPILE[610]; qk_passmanager_new() -> *mut QkPassManager);
+declare_fn!(crate::QK_FFI_TRANSPILE[611]; qk_passmanager_free(pm: *mut QkPassManager));
+declare_fn!(crate::QK_FFI_TRANSPILE[612]; qk_passmanager_push_pass(pm: *mut QkPassManager, pass: *mut QkPass) -> QkExitCode);
+declare_fn!(crate::QK_FFI_TRANSPILE[613]; qk_passmanager_run_simple(pm: *mut QkPassManager, ir: *mut ::std::ffi::c_void, ir_in_handle: *const QkIrHandle, ir_out_handle: *const QkIrHandle, error: *mut *mut QkCompilationError) -> *mut ::std::ffi::c_void);
 declare_fn!(crate::QK_FFI_QI[0]; qk_obs_zero(num_qubits: u32) -> *mut QkObs);
 declare_fn!(crate::QK_FFI_QI[1]; qk_obs_identity(num_qubits: u32) -> *mut QkObs);
 declare_fn!(crate::QK_FFI_QI[2]; qk_obs_new(num_qubits: u32, num_terms: u64, num_bits: u64, coeffs: *mut ::num_complex::Complex64, bit_terms: *mut QkBitTerm, indices: *mut u32, boundaries: *mut usize) -> *mut QkObs);
@@ -851,3 +1022,4 @@ declare_fn!(crate::QK_FFI_QI[28]; qk_bitterm_label(bit_term: QkBitTerm) -> u8);
 declare_fn!(crate::QK_FFI_QI[29]; qk_obs_to_python(obs: *mut QkObs) -> *mut ::pyo3::ffi::PyObject);
 declare_fn!(crate::QK_FFI_QI[30]; qk_obs_borrow_from_python(ob: *mut ::pyo3::ffi::PyObject) -> *mut QkObs);
 declare_fn!(crate::QK_FFI_QI[31]; qk_obs_convert_from_python(object: *mut ::pyo3::ffi::PyObject, address: *mut ::std::ffi::c_void) -> ::std::ffi::c_int);
+declare_fn!(crate::QK_FFI_QI[32]; qk_obs_with_capacity(num_qubits: u32, num_terms: usize, num_bit_terms: usize) -> *mut QkObs);

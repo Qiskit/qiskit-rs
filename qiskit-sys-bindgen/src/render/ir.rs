@@ -96,7 +96,6 @@ impl Primitive {
             Self::ULong => valid_type!(::std::ffi::c_ulong),
             Self::LongLong => valid_type!(::std::ffi::c_longlong),
             Self::ULongLong => valid_type!(::std::ffi::c_ulonglong),
-            #[cfg(feature = "python_binding")]
             // Can't use `valid_type!` on these because we don't depend on these crates here.
             #[cfg(feature = "python_binding")]
             Self::PyObject => "::pyo3::ffi::PyObject",
