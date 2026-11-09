@@ -11,6 +11,11 @@ description = "Raw bindings to the Qiskit C FFI accessed through the Python-spac
 # These files are Qiskit developer convenience, and don't have a meaning for the packaged crate.
 exclude = [".cargo"]
 
+# Forcibly exclude this from any containing workspace.
+[workspace]
+
+[lib]
+name = "qiskit_pyo3_ffi"
 
 [dependencies]
 # We don't inherit from the workspace because this crate is intended for distribution to others to
@@ -19,4 +24,4 @@ pyo3.version = ">=0.22,<=0.29"
 num-complex.version = "0.4"
 
 [build-dependencies]
-qiskit-sys-bindgen = {workspace = true, features = ["python_binding"]}
+qiskit-sys-bindgen = {path = "../qiskit-sys-bindgen/", features = ["python_binding"]}

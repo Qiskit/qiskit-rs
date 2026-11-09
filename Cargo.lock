@@ -2539,15 +2539,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "qiskit-sys-pyo3"
-version = "0.1.0"
-dependencies = [
- "num-complex",
- "pyo3",
- "qiskit-sys-bindgen",
-]
-
-[[package]]
 name = "qiskit-transpiler"
 version = "0.0.0"
 dependencies = [

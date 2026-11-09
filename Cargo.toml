@@ -10,7 +10,8 @@ readme = "README.md"
 keywords = ["quantum", "qiskit"]
 
 [workspace]
-members = ["qiskit-sys", "qiskit-sys-bindgen", "qiskit-sys-pyo3"]
+members = ["qiskit-sys", "qiskit-sys-bindgen"]
+exclude = ["qiskit-sys-pyo3"]
 
 [workspace.package]
 edition = "2024"
