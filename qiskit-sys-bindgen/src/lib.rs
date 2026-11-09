@@ -1,0 +1,88 @@
+// This code is part of Qiskit.
+//
+// (C) Copyright IBM 2026
+//
+// This code is licensed under the Apache License, Version 2.0. You may
+// obtain a copy of this license in the LICENSE.txt file in the root directory
+// of this source tree or at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// Any modifications or derivative works of this code must retain this
+// copyright notice, and modified files need to carry a notice indicating
+// that they have been altered from the originals.
+pub mod render;
+
+pub use qiskit_bindgen::generate_bindings;
+#[cfg(feature = "python_binding")]
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
+
+#[cfg(feature = "python_binding")]
+fn rust_pyo3_ffi_root() -> PathBuf {
+    let path: PathBuf = [env!("CARGO_MANIFEST_DIR"), "src", "pyo3-ffi"]
+        .iter()
+        .collect();
+    println!("cargo:warning=Root pkg dir: {:?}", path.to_str());
+    path
+}
+
+#[cfg(feature = "python_binding")]
+fn rust_pyo3_ffi_files() -> anyhow::Result<Vec<PathBuf>> {
+    let root = rust_pyo3_ffi_root();
+
+    let mut out = Vec::new();
+    for file in fs::read_dir(root)?.into_iter().flatten() {
+        let path = file.path();
+        if path.is_file() {
+            println!("cargo:warning=We shall copy file {:?}", path.to_str());
+            out.push(path);
+        }
+    }
+    Ok(out)
+}
+
+#[cfg(feature = "python_binding")]
+pub fn install_rust_pyo3_ffi(
+    bindings: &cbindgen::Bindings,
+    install_path: impl AsRef<Path>,
+) -> anyhow::Result<()> {
+    let mut items = render::ir::Items::default();
+    items.add_from_cbindgen(bindings)?;
+
+    let install_path = install_path.as_ref();
+    fs::create_dir_all(install_path)?;
+
+    // First copy over the template repository verbatim...
+    let crate_root = rust_pyo3_ffi_root();
+    for file in rust_pyo3_ffi_files()? {
+        if let Some(parent) = file.parent() {
+            fs::create_dir_all(install_path.join(parent))?;
+        }
+        println!(
+            "cargo:warning=Copying file: {:?} to {:?}",
+            file,
+            install_path.join(&file.file_name().expect("File should have a name"))
+        );
+        fs::copy(
+            crate_root.join(&file),
+            install_path.join(&file.file_name().expect("File should have a name")),
+        )?;
+    }
+
+    // ... and then overwrite the generated file.
+    items.export(fs::File::create(install_path.join("ffi.rs"))?)?;
+    Ok(())
+}
+
+#[cfg(feature = "python_binding")]
+pub fn generate_and_install_rust_pyo3_ffi(install_path: impl AsRef<Path>) -> anyhow::Result<()> {
+    let cext_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("qiskit")
+        .join("crates")
+        .join("cext");
+    println!("cargo:warning=C-Ext Path: {:?}", cext_path.to_str());
+    let bindings = generate_bindings(cext_path)?;
+    install_rust_pyo3_ffi(&bindings, install_path)?;
+    Ok(())
+}
