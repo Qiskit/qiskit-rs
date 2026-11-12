@@ -15,5 +15,5 @@ description = "Raw bindings to the Qiskit C FFI accessed through the Python-spac
 name = "qiskit_pyo3_ffi"
 
 [dependencies]
-pyo3.version = ">=0.22,<=0.28"
+pyo3.version = ">=0.22,<=0.30"
 num-complex.version = "0.4"
